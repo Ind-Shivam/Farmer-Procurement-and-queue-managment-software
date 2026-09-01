@@ -1,0 +1,129 @@
+:root {
+  --text: #475569;
+  --text-h: #0f172a;
+  --text-muted: #64748b;
+  --bg: #f8fafc;
+  --panel-bg: #ffffff;
+  --border: #e2e8f0;
+  --border-focus: #16a34a;
+  --code-bg: #f1f5f9;
+
+  /* Primary Emerald/Agricultural Theme */
+  --primary: #16a34a;
+  --primary-hover: #15803d;
+  --primary-bg: rgba(22, 163, 74, 0.08);
+  --primary-border: rgba(22, 163, 74, 0.35);
+
+  /* Warm Gold/Amber for Warnings & Produce */
+  --accent: #d97706;
+  --accent-bg: rgba(217, 119, 6, 0.1);
+  --accent-border: rgba(217, 119, 6, 0.35);
+
+  /* Danger Red */
+  --danger: #dc2626;
+  --danger-bg: rgba(220, 38, 38, 0.08);
+  --danger-border: rgba(220, 38, 38, 0.3);
+
+  /* Surfaces & Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 25px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+  --shadow-hover: 0 12px 28px -4px rgba(22, 163, 74, 0.15);
+
+  --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --heading: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+
+  font: 16px/150% var(--sans);
+  color-scheme: light dark;
+  color: var(--text);
+  background: var(--bg);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text: #94a3b8;
+    --text-h: #f8fafc;
+    --text-muted: #64748b;
+    --bg: #0b0f17;
+    --panel-bg: #131b2a;
+    --border: #1e293b;
+    --border-focus: #22c55e;
+    --code-bg: #1e293b;
+
+    --primary: #22c55e;
+    --primary-hover: #4ade80;
+    --primary-bg: rgba(34, 197, 94, 0.12);
+    --primary-border: rgba(34, 197, 94, 0.4);
+
+    --accent: #f59e0b;
+    --accent-bg: rgba(245, 158, 11, 0.15);
+    --accent-border: rgba(245, 158, 11, 0.4);
+
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+    --shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 12px 30px rgba(0, 0, 0, 0.6);
+    --shadow-hover: 0 12px 28px -4px rgba(34, 197, 94, 0.2);
+  }
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg);
+}
+
+#root {
+  width: 100%;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+}
+
+h1, h2, h3, h4, h5 {
+  font-family: var(--heading);
+  color: var(--text-h);
+  margin: 0;
+  font-weight: 700;
+}
+
+h1 {
+  font-size: clamp(24px, 4vw, 36px);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+h2 {
+  font-size: clamp(20px, 3vw, 24px);
+  line-height: 1.3;
+}
+
+h3 {
+  font-size: 18px;
+  line-height: 1.4;
+}
+
+p {
+  margin: 0;
+}
+
+code, .token-mono, .vehicle-code {
+  font-family: var(--mono);
+  font-size: 14px;
+  background: var(--code-bg);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--text-h);
+}
+
+a {
+  color: var(--primary);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+a:hover {
+  text-decoration: underline;
+}
