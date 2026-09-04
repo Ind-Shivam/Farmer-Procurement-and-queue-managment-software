@@ -8,7 +8,7 @@ import { findCentre, findSlot } from '../utils/slots.js'
 
 function QueueStatus() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const { bookings, notifications, refreshData, refreshing, isFirebaseActive } = useBookings()
+  const { bookings, notifications, refreshData, refreshing } = useBookings()
 
   const initialToken = searchParams.get('token') || ''
   const initialCentre = searchParams.get('centre') || centres[0].id
@@ -74,130 +74,176 @@ function QueueStatus() {
   const nextInLine = queueList.find((item) => item.position === 2)
 
   return (
-    <div className="page">
-      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
+    <div className="queue-page-container">
+      {/* 1. Header Bar */}
+      <div className="queue-header-bar">
         <div>
-          <p className="eyebrow">Real-Time Mandi Operations · Live Feed</p>
-          <h1>Live Procurement Queue Board</h1>
-          <p className="lede">
-            Track live token callouts, estimated counter waiting times, procurement statuses, and payment progression.
+          <span className="queue-eyebrow">Real-Time Mandi Operations &bull; Live Feed</span>
+          <h1 className="queue-page-title">Live Procurement Queue Board</h1>
+          <p className="queue-page-lede">
+            Track live token callouts, estimated counter waiting times, procurement stages, and payment progression.
           </p>
         </div>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <span className="queue-live-pulse-tag">
+            <span className="material-symbols-outlined text-sm filled" style={{ color: '#166534' }}>sensors</span>
+            Live Queue Active
+          </span>
           <button
             type="button"
-            className={`btn btn-sm ${refreshing ? 'btn-secondary' : 'btn-primary'}`}
+            className="btn-refresh-queue"
             onClick={refreshData}
             disabled={refreshing}
-            title="Re-fetch latest queue and status from Firestore"
+            title="Refresh latest queue data"
           >
-            {refreshing ? '🔄 Refreshing...' : '🔄 Refresh Queue'}
+            <span className="material-symbols-outlined text-sm">refresh</span>
+            <span>{refreshing ? 'Refreshing...' : 'Refresh'}</span>
           </button>
-          <span className={`badge ${isFirebaseActive ? 'badge-accent' : 'badge-neutral'}`}>
-            {isFirebaseActive ? '🔥 Firestore Connected' : '⚡ Local Mode'}
-          </span>
         </div>
       </div>
 
-      {/* Quick Token & Mobile Lookup Bar */}
-      <div className="token-lookup-bar panel">
-        <form className="lookup-form" onSubmit={handleTokenSearch}>
-          <div className="lookup-input-group" style={{ flex: 1 }}>
-            <span className="lookup-icon">🎫</span>
+      {/* 2. Quick Token & Mobile Lookup Bar */}
+      <div className="queue-search-card">
+        <form className="queue-search-form" onSubmit={handleTokenSearch}>
+          <div className="queue-search-input-wrap">
+            <span className="material-symbols-outlined queue-search-icon">search</span>
             <input
               type="text"
-              placeholder="Enter Token (e.g. KC-2026-0101) or Mobile (e.g. 9876500001)..."
+              placeholder="Enter Token (e.g. KC-2026-0101) or 10-digit Mobile..."
               value={tokenInput}
               onChange={(e) => setTokenInput(e.target.value)}
+              className="queue-search-input"
             />
           </div>
-          <button type="submit" className="btn btn-primary">
-            Find My Status in Queue →
+          <button type="submit" className="btn-queue-search-action">
+            <span>Find My Status</span>
+            <span className="material-symbols-outlined text-sm">arrow_forward</span>
           </button>
         </form>
 
         {activeToken && (
-          <div className="active-token-status" style={{ marginTop: '12px' }}>
+          <div>
             {activeBooking ? (
-              <div className="token-found-badge">
-                <span>
-                  Showing position for <strong>{activeBooking.token}</strong> ({activeBooking.name} &bull; {activeBooking.status || 'Booked'})
-                </span>
-                <Link to={`/booking/${activeBooking.token}`} className="link-underlined" style={{ marginLeft: '12px' }}>
-                  View Full Pass Slip
+              <div className="queue-token-result-banner">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span className="material-symbols-outlined text-sm" style={{ color: '#003527' }}>check_circle</span>
+                  <span>
+                    Showing position for <strong>{activeBooking.token}</strong> ({activeBooking.name} &bull; {activeBooking.status || 'Booked'})
+                  </span>
+                </div>
+                <Link to={`/booking/${activeBooking.token}`} className="btn-view-details-link">
+                  <span>View Full Pass Slip</span>
+                  <span className="material-symbols-outlined text-sm">arrow_forward</span>
                 </Link>
               </div>
             ) : (
-              <span className="token-not-found">
-                ⚠️ No booking found for &ldquo;{activeToken}&rdquo;. Check your token number or mobile digits.
-              </span>
+              <div className="queue-token-notfound">
+                <span className="material-symbols-outlined text-sm">warning</span>
+                <span>No booking found for &ldquo;{activeToken}&rdquo;. Please verify your token number or registered mobile.</span>
+              </div>
             )}
           </div>
         )}
       </div>
 
-      {/* Detailed Highlight Card for Active Queried Token */}
+      {/* 3. Detailed Highlight Card for Active Queried Token */}
       {activeBooking && userQueueSummary && (
-        <div className="panel" style={{ border: '2px solid var(--primary, #16a34a)', background: 'var(--card-bg, #fff)', marginBottom: '24px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
+        <div className="user-reservation-card">
+          <div className="user-reservation-header">
             <div>
-              <span className="badge badge-accent" style={{ marginBottom: '6px', display: 'inline-block' }}>
-                🌾 YOUR RESERVATION DETAILS
+              <span className="user-reservation-tag">
+                <span className="material-symbols-outlined text-sm" style={{ color: '#4059aa' }}>verified</span>
+                YOUR RESERVATION DETAILS
               </span>
-              <h2 style={{ margin: '4px 0' }}>Token: {activeBooking.token}</h2>
-              <p className="text-muted" style={{ margin: 0 }}>
-                Farmer: <strong>{activeBooking.name}</strong> &bull; +91 {activeBooking.mobile} &bull; 🚗 {activeBooking.vehicleNumber}
+              <h2 className="user-reservation-token-title">Token: {activeBooking.token}</h2>
+              <p className="user-reservation-farmer-desc" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginTop: '4px' }}>
+                <span>Farmer: <strong>{activeBooking.name}</strong></span>
+                <span>&bull;</span>
+                <span className="material-symbols-outlined text-sm" style={{ fontSize: '15px' }}>call</span>
+                <span>+91 {activeBooking.mobile}</span>
+                <span>&bull;</span>
+                <span className="material-symbols-outlined text-sm" style={{ fontSize: '15px' }}>local_shipping</span>
+                <span>{activeBooking.vehicleNumber}</span>
               </p>
             </div>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              <span className="status-pill pill-serving" style={{ fontSize: '0.9rem', padding: '6px 12px' }}>
-                📋 Procurement: <strong>{activeBooking.status || 'Booked'}</strong>
+            <div className="user-reservation-badges">
+              <span className={`badge-status-pill ${activeBooking.status === 'Completed' ? 'pill-status-completed' : ['At Gate', 'Quality Check', 'Weighment'].includes(activeBooking.status) ? 'pill-status-serving' : 'pill-status-booked'}`}>
+                <span className="material-symbols-outlined text-sm">assignment</span>
+                Procurement: <strong>{activeBooking.status || 'Booked'}</strong>
               </span>
-              <span className="status-pill pill-next" style={{ fontSize: '0.9rem', padding: '6px 12px' }}>
-                💳 Payment: <strong>{activeBooking.paymentStatus || 'Pending'}</strong>
+              <span className={`badge-status-pill ${activeBooking.paymentStatus === 'Completed' ? 'pill-status-paid' : 'pill-status-pending'}`}>
+                <span className="material-symbols-outlined text-sm">payments</span>
+                Payment: <strong>{activeBooking.paymentStatus || 'Pending'}</strong>
               </span>
             </div>
           </div>
 
-          <div className="stat-row" style={{ marginTop: '12px', marginBottom: '12px' }}>
-            <div className="stat-card">
-              <span className="stat-tag">🏢 Centre &amp; Slot</span>
-              <strong className="stat-num" style={{ fontSize: '1.25rem' }}>
+          <div className="user-reservation-metrics-grid">
+            {/* Metric 1 */}
+            <div className="user-metric-box">
+              <span className="user-metric-tag">
+                <span className="material-symbols-outlined text-sm">location_city</span>
+                Centre &amp; Slot
+              </span>
+              <div className="user-metric-val">
                 {findCentre(centres, activeBooking.centreId)?.name || activeBooking.centreId}
-              </strong>
-              <span className="stat-sub">
-                📅 {activeBooking.date} &bull; 🕒 {activeSlotInfo?.label || '09:00 – 11:00'}
+              </div>
+              <span className="user-metric-sub" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>calendar_month</span>
+                <span>{activeBooking.date}</span>
+                <span>&bull;</span>
+                <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>schedule</span>
+                <span>{activeSlotInfo?.label || '09:00 – 11:00'}</span>
               </span>
             </div>
 
-            <div className="stat-card">
-              <span className="stat-tag">📍 Queue Position</span>
-              <strong className="stat-num text-primary">
+            {/* Metric 2 */}
+            <div className="user-metric-box">
+              <span className="user-metric-tag">
+                <span className="material-symbols-outlined text-sm">pin_drop</span>
+                Queue Position
+              </span>
+              <div className="user-metric-val" style={{ color: '#003527', fontSize: '24px' }}>
                 {userQueueSummary.position ? `#${userQueueSummary.position}` : '—'}
-              </strong>
-              <span className="stat-sub">
+              </div>
+              <span className="user-metric-sub">
                 {userQueueSummary.statusLabel}
               </span>
             </div>
 
-            <div className="stat-card">
-              <span className="stat-tag">👥 Farmers Ahead</span>
-              <strong className="stat-num">{userQueueSummary.peopleAhead}</strong>
-              <span className="stat-sub">Vehicles in line before you</span>
+            {/* Metric 3 */}
+            <div className="user-metric-box">
+              <span className="user-metric-tag">
+                <span className="material-symbols-outlined text-sm">groups</span>
+                Farmers Ahead
+              </span>
+              <div className="user-metric-val" style={{ fontSize: '24px' }}>
+                {userQueueSummary.peopleAhead}
+              </div>
+              <span className="user-metric-sub">Vehicles in line before you</span>
             </div>
 
-            <div className="stat-card">
-              <span className="stat-tag">⏱️ Est. Waiting Time</span>
-              <strong className="stat-num text-accent">{userQueueSummary.waitLabel}</strong>
-              <span className="stat-sub">Calculated at 8 mins/vehicle</span>
+            {/* Metric 4 */}
+            <div className="user-metric-box">
+              <span className="user-metric-tag">
+                <span className="material-symbols-outlined text-sm">schedule</span>
+                Est. Waiting Time
+              </span>
+              <div className="user-metric-val" style={{ color: '#854d0e', fontSize: '18px' }}>
+                {userQueueSummary.waitLabel}
+              </div>
+              <span className="user-metric-sub">Calculated at 8 mins/vehicle</span>
             </div>
           </div>
 
-          {/* In-app status update alerts for this specific farmer */}
+          {/* In-app Notification Alert */}
           {tokenNotifications.length > 0 && (
-            <div style={{ background: '#f0fdf4', borderLeft: '4px solid var(--primary, #16a34a)', padding: '10px 14px', borderRadius: '6px', marginTop: '12px' }}>
-              <strong>🔔 Latest Notification from Mandi:</strong>
-              <p style={{ margin: '4px 0 0 0', color: '#166534', fontSize: '0.9rem' }}>
+            <div style={{ background: '#f0fdf4', borderLeft: '4px solid #16a34a', padding: '12px 16px', borderRadius: '8px', marginTop: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#064e3b', fontWeight: '700', fontSize: '13px' }}>
+                <span className="material-symbols-outlined text-sm">notifications</span>
+                <span>Latest Update from Mandi Staff:</span>
+              </div>
+              <p style={{ margin: '4px 0 0 0', color: '#166534', fontSize: '13px' }}>
                 {tokenNotifications[0].message}
               </p>
             </div>
@@ -205,10 +251,13 @@ function QueueStatus() {
         </div>
       )}
 
-      {/* Queue Filter Controls */}
-      <div className="queue-controls-card panel">
-        <div className="control-group">
-          <label htmlFor="q-centre">🏢 Procurement Centre</label>
+      {/* 4. Queue Filter Controls */}
+      <div className="queue-filters-row">
+        <div className="filter-card">
+          <label className="filter-label" htmlFor="q-centre">
+            <span className="material-symbols-outlined text-sm" style={{ color: '#4059aa' }}>location_city</span>
+            Procurement Centre
+          </label>
           <select
             id="q-centre"
             value={selectedCentre}
@@ -216,6 +265,7 @@ function QueueStatus() {
               setSelectedCentre(e.target.value)
               setSearchParams({ centre: e.target.value, date: selectedDate, window: selectedWindow })
             }}
+            className="filter-select-input"
           >
             {centres.map((c) => (
               <option key={c.id} value={c.id}>
@@ -225,8 +275,11 @@ function QueueStatus() {
           </select>
         </div>
 
-        <div className="control-group">
-          <label htmlFor="q-date">📅 Date</label>
+        <div className="filter-card">
+          <label className="filter-label" htmlFor="q-date">
+            <span className="material-symbols-outlined text-sm" style={{ color: '#003527' }}>calendar_today</span>
+            Date
+          </label>
           <select
             id="q-date"
             value={selectedDate}
@@ -234,6 +287,7 @@ function QueueStatus() {
               setSelectedDate(e.target.value)
               setSearchParams({ centre: selectedCentre, date: e.target.value, window: selectedWindow })
             }}
+            className="filter-select-input"
           >
             {SLOT_DATES.map((d, idx) => (
               <option key={d} value={d}>
@@ -243,8 +297,11 @@ function QueueStatus() {
           </select>
         </div>
 
-        <div className="control-group">
-          <label htmlFor="q-window">🕒 Time Slot Window</label>
+        <div className="filter-card">
+          <label className="filter-label" htmlFor="q-window">
+            <span className="material-symbols-outlined text-sm" style={{ color: '#854d0e' }}>schedule</span>
+            Time Slot Window
+          </label>
           <select
             id="q-window"
             value={selectedWindow}
@@ -252,6 +309,7 @@ function QueueStatus() {
               setSelectedWindow(e.target.value)
               setSearchParams({ centre: selectedCentre, date: selectedDate, window: e.target.value })
             }}
+            className="filter-select-input"
           >
             {windows.map((w) => (
               <option key={w.key} value={w.key}>
@@ -262,67 +320,94 @@ function QueueStatus() {
         </div>
       </div>
 
-      {/* Live Board KPI Stats */}
-      <div className="stat-row board-stat-row">
-        <div className="stat-card stat-serving">
-          <span className="stat-tag">🟢 Counter 1 Serving</span>
-          <strong className="stat-num">{nowServing ? nowServing.token : 'None'}</strong>
-          <span className="stat-sub">{nowServing ? `${nowServing.name} · ${nowServing.crop}` : 'Counter idle'}</span>
+      {/* 5. Live Board KPI Stats */}
+      <div className="queue-board-stats-grid">
+        <div className="board-kpi-card serving">
+          <span className="board-kpi-tag" style={{ color: '#166534' }}>
+            <span className="material-symbols-outlined text-sm filled" style={{ color: '#166534' }}>check_circle</span>
+            Counter 1 Serving
+          </span>
+          <div className="board-kpi-val" style={{ color: '#003527' }}>
+            {nowServing ? nowServing.token : 'None'}
+          </div>
+          <span className="board-kpi-sub">
+            {nowServing ? `${nowServing.name} · ${nowServing.crop}` : 'Counter is currently open'}
+          </span>
         </div>
 
-        <div className="stat-card stat-next">
-          <span className="stat-tag">⚡ Next in Line</span>
-          <strong className="stat-num">{nextInLine ? nextInLine.token : 'None'}</strong>
-          <span className="stat-sub">{nextInLine ? `${nextInLine.name} (${nextInLine.vehicleNumber})` : 'Waiting for arrivals'}</span>
+        <div className="board-kpi-card next">
+          <span className="board-kpi-tag" style={{ color: '#854d0e' }}>
+            <span className="material-symbols-outlined text-sm" style={{ color: '#854d0e' }}>bolt</span>
+            Next in Line
+          </span>
+          <div className="board-kpi-val" style={{ color: '#854d0e' }}>
+            {nextInLine ? nextInLine.token : 'None'}
+          </div>
+          <span className="board-kpi-sub">
+            {nextInLine ? `${nextInLine.name} (${nextInLine.vehicleNumber})` : 'Waiting for arrivals'}
+          </span>
         </div>
 
-        <div className="stat-card">
-          <span className="stat-tag">👥 Total Scheduled</span>
-          <strong className="stat-num">{queueList.length}</strong>
-          <span className="stat-sub">Farmers for this time window</span>
+        <div className="board-kpi-card total">
+          <span className="board-kpi-tag" style={{ color: '#4059aa' }}>
+            <span className="material-symbols-outlined text-sm" style={{ color: '#4059aa' }}>groups</span>
+            Total Scheduled
+          </span>
+          <div className="board-kpi-val" style={{ color: '#0d1c2e' }}>
+            {queueList.length} Farmers
+          </div>
+          <span className="board-kpi-sub">For this selected window</span>
         </div>
 
-        <div className="stat-card">
-          <span className="stat-tag">🌾 Mandi Location</span>
-          <strong className="stat-num" style={{ fontSize: '1.15rem' }}>{centreInfo?.name || 'Mandi Yard'}</strong>
-          <span className="stat-sub">📞 {centreInfo?.contact || '+91 7152 245012'}</span>
+        <div className="board-kpi-card centre">
+          <span className="board-kpi-tag" style={{ color: '#404944' }}>
+            <span className="material-symbols-outlined text-sm" style={{ color: '#404944' }}>pin_drop</span>
+            Mandi Location
+          </span>
+          <div className="board-kpi-val" style={{ fontSize: '15px', fontFamily: 'inherit' }}>
+            {centreInfo?.name || 'Mandi Yard'}
+          </div>
+          <span className="board-kpi-sub">📞 {centreInfo?.contact || '+91 7152 245012'}</span>
         </div>
       </div>
 
-      {/* Live Queue Table */}
-      <div className="panel queue-table-panel">
-        <div className="table-header-bar">
-          <h3>
-            📋 Live Queue Order for {centreInfo?.name} · {selectedDate} ({windows.find((w) => w.key === selectedWindow)?.label})
+      {/* 6. Live Queue Table */}
+      <div className="queue-table-card">
+        <div className="table-header-flex">
+          <h3 className="table-header-title">
+            <span className="material-symbols-outlined" style={{ color: '#003527' }}>format_list_numbered</span>
+            Queue Order: {centreInfo?.name} &bull; {selectedDate} ({windows.find((w) => w.key === selectedWindow)?.label})
           </h3>
-          <span className="badge badge-accent">{queueList.length} Farmers Scheduled</span>
+          <span style={{ fontSize: '12px', fontWeight: '700', background: '#eff4ff', color: '#4059aa', padding: '4px 12px', borderRadius: '9999px' }}>
+            {queueList.length} Scheduled
+          </span>
         </div>
 
         {queueList.length === 0 ? (
-          <div className="empty-queue-notice">
-            <p>No farmers currently queued for this specific time slot.</p>
+          <div style={{ textAlign: 'center', padding: '36px 20px', color: '#64748b' }}>
+            <p style={{ margin: '0 0 12px 0', fontSize: '14px' }}>No farmers currently queued for this specific time slot window.</p>
             <Link
               to={`/book?centre=${selectedCentre}&date=${selectedDate}`}
               className="btn btn-primary"
-              style={{ marginTop: '12px' }}
+              style={{ padding: '8px 18px', fontSize: '13px' }}
             >
               Book this Slot Now
             </Link>
           </div>
         ) : (
-          <div className="table-wrap">
-            <table className="queue-table">
+          <div className="queue-table-responsive">
+            <table className="queue-data-table">
               <thead>
                 <tr>
-                  <th>Pos</th>
-                  <th>Token Number</th>
+                  <th style={{ width: '60px' }}>Queue #</th>
+                  <th>Token</th>
                   <th>Farmer Name</th>
-                  <th>Produce</th>
+                  <th>Crop &amp; Quantity</th>
                   <th>Vehicle</th>
-                  <th>Procurement Status</th>
-                  <th>Payment Status</th>
+                  <th>Procurement Stage</th>
+                  <th>Payment</th>
                   <th>Est. Wait</th>
-                  <th>Actions</th>
+                  <th style={{ textAlign: 'right' }}>Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -334,42 +419,53 @@ function QueueStatus() {
                   return (
                     <tr
                       key={item.token}
-                      className={`queue-row ${isUser ? 'row-user-active' : ''} ${item.position === 1 ? 'row-serving' : ''}`}
+                      className={`${isUser ? 'queue-row-user' : ''} ${item.position === 1 ? 'queue-row-serving' : ''}`}
                     >
                       <td>
-                        <span className="pos-badge">#{item.position}</span>
+                        <span className="pos-circle-tag">#{item.position}</span>
                       </td>
                       <td>
-                        <strong className="token-mono">{item.token}</strong>
-                        {isUser && <span className="your-token-tag">YOU</span>}
+                        <span className="token-cell-code">{item.token}</span>
+                        {isUser && <span className="you-pill-badge">YOU</span>}
                       </td>
-                      <td>{item.name}</td>
+                      <td style={{ fontWeight: '600' }}>{item.name}</td>
                       <td>
-                        {item.crop} <small className="text-muted">({item.quantity} q)</small>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          <span className="material-symbols-outlined text-sm" style={{ color: '#003527' }}>grass</span>
+                          <span>{item.crop}</span>
+                        </span>{' '}
+                        <small style={{ color: '#64748b' }}>({item.quantity} q)</small>
                       </td>
                       <td>
-                        <code className="vehicle-code">{item.vehicleNumber}</code>
+                        <code style={{ background: '#eff4ff', padding: '2px 6px', borderRadius: '4px', fontSize: '12px', color: '#003527', fontWeight: '700' }}>
+                          {item.vehicleNumber}
+                        </code>
                       </td>
                       <td>
                         <span
-                          className={`status-pill ${
+                          className={`badge-status-pill ${
                             currentStatus === 'Completed'
-                              ? 'pill-next'
+                              ? 'pill-status-completed'
                               : ['At Gate', 'Quality Check', 'Weighment'].includes(currentStatus)
-                              ? 'pill-serving'
-                              : 'pill-waiting'
+                              ? 'pill-status-serving'
+                              : 'pill-status-booked'
                           }`}
                         >
                           {currentStatus}
                         </span>
                       </td>
                       <td>
-                        <span className="badge badge-neutral">{currentPayment}</span>
+                        <span className={`badge-status-pill ${currentPayment === 'Completed' ? 'pill-status-paid' : 'pill-status-pending'}`}>
+                          {currentPayment}
+                        </span>
                       </td>
-                      <td>{item.waitLabel}</td>
-                      <td>
-                        <Link to={`/booking/${item.token}`} className="btn-table-action">
-                          Details
+                      <td style={{ fontWeight: '600', color: item.position === 1 ? '#166534' : '#0d1c2e' }}>
+                        {item.waitLabel}
+                      </td>
+                      <td style={{ textAlign: 'right' }}>
+                        <Link to={`/booking/${item.token}`} className="btn-view-details-link">
+                          <span>Details</span>
+                          <span className="material-symbols-outlined text-xs">arrow_forward</span>
                         </Link>
                       </td>
                     </tr>
@@ -381,19 +477,28 @@ function QueueStatus() {
         )}
       </div>
 
-      {/* Helpful Mandi Entry Tips */}
-      <div className="info-cards-grid">
-        <div className="card">
-          <h3>🚚 Yard Entry Procedure</h3>
-          <p>Present your token number at Gate 1 for weighbridge gross measurement before entering the auction platform.</p>
+      {/* 7. Mandi Entry Instructions Cards */}
+      <div className="queue-info-cards-grid">
+        <div className="queue-info-card">
+          <h4>
+            <span className="material-symbols-outlined text-sm" style={{ color: '#003527' }}>local_shipping</span>
+            Yard Entry Protocol
+          </h4>
+          <p>Present your token at Gate 1 for weighbridge gross measurement before proceeding to the auction and unloading platform.</p>
         </div>
-        <div className="card">
-          <h3>⏱️ Wait Time Calculation</h3>
-          <p>Procurement takes approximately 8 minutes per vehicle (sampling, moisture test, and unloading).</p>
+        <div className="queue-info-card">
+          <h4>
+            <span className="material-symbols-outlined text-sm" style={{ color: '#854d0e' }}>timer</span>
+            Wait Time Calculation
+          </h4>
+          <p>Procurement takes approximately 8 minutes per vehicle (sampling test, moisture verification, and weighment).</p>
         </div>
-        <div className="card">
-          <h3>🔔 Real-Time Notifications</h3>
-          <p>Watch this live board or refresh your pass. Whenever staff updates your stage, your status reflects here instantly.</p>
+        <div className="queue-info-card">
+          <h4>
+            <span className="material-symbols-outlined text-sm" style={{ color: '#4059aa' }}>notifications_active</span>
+            Live Stage Alerts
+          </h4>
+          <p>This board refreshes automatically. Whenever mandi staff records your stage, your vehicle position updates here in real-time.</p>
         </div>
       </div>
     </div>

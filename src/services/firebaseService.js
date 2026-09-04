@@ -1,5 +1,6 @@
 import {
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -484,3 +485,59 @@ export async function seedFirestoreDataIfEmpty() {
     return false
   }
 }
+
+/**
+ * 16. Save or update a Procurement Centre document in Firestore
+ */
+export async function saveProcurementCentre(centreData) {
+  if (!db || !isFirebaseConfigured()) return null
+  const id = centreData.id || `centre_${Date.now()}`
+  const centreRef = doc(db, COLLECTIONS.CENTRES, id)
+  const payload = {
+    id,
+    name: String(centreData.name || '').trim(),
+    location: String(centreData.location || '').trim(),
+    contact: String(centreData.contact || '').trim(),
+    openingHours: String(centreData.openingHours || '08:00 – 17:00').trim(),
+    capacityPerDay: Number(centreData.capacityPerDay) || 32,
+    acceptedCrops: Array.isArray(centreData.acceptedCrops) ? centreData.acceptedCrops : ['Paddy', 'Soybean', 'Cotton'],
+    updatedAt: new Date().toISOString(),
+  }
+  await setDoc(centreRef, payload, { merge: true })
+  return payload
+}
+
+/**
+ * 17. Delete a Procurement Centre document from Firestore
+ */
+export async function deleteProcurementCentre(centreId) {
+  if (!db || !isFirebaseConfigured() || !centreId) return false
+  const centreRef = doc(db, COLLECTIONS.CENTRES, centreId)
+  await deleteDoc(centreRef)
+  return true
+}
+
+/**
+ * 18. Update user's assignedCentreId in Firestore
+ */
+export async function updateUserAssignedCentre(uid, centreId) {
+  if (!db || !isFirebaseConfigured() || !uid) return false
+  const userRef = doc(db, 'users', uid)
+  await setDoc(userRef, { assignedCentreId: centreId, updatedAt: new Date().toISOString() }, { merge: true })
+  return true
+}
+
+/**
+ * 19. Fetch all user profile documents for Admin Staff Management
+ */
+export async function fetchAllUsersProfiles() {
+  if (!db || !isFirebaseConfigured()) return []
+  try {
+    const snap = await getDocs(collection(db, 'users'))
+    return snap.docs.map((d) => ({ uid: d.id, ...d.data() }))
+  } catch (err) {
+    console.warn('⚠️ Error fetching users profiles:', err)
+    return []
+  }
+}
+

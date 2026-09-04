@@ -9,7 +9,8 @@ import {
 } from '../utils/slots.js'
 
 function ProcurementCentres() {
-  const { bookings } = useBookings()
+  const { bookings, centres: dynamicCentres } = useBookings()
+  const displayCentres = dynamicCentres && dynamicCentres.length > 0 ? dynamicCentres : centres
   const [selectedDate, setSelectedDate] = useState(SLOT_DATES[0])
 
   return (
@@ -48,7 +49,8 @@ function ProcurementCentres() {
                 className={`pill-btn ${isSelected ? 'active' : ''}`}
                 onClick={() => setSelectedDate(date)}
               >
-                📅 {label}
+                <span className="material-symbols-outlined text-sm">calendar_month</span>
+                <span>{label}</span>
               </button>
             )
           })}
@@ -57,7 +59,7 @@ function ProcurementCentres() {
 
       {/* Centres Grid */}
       <div className="centres-grid">
-        {centres.map((centre) => {
+        {displayCentres.map((centre) => {
           const availCount = availableSeatCount(slots, bookings, centre.id, selectedDate)
           const totalCap = totalCapacityForCentreDate(slots, centre.id, selectedDate)
           const bookedCount = Math.max(0, totalCap - availCount)

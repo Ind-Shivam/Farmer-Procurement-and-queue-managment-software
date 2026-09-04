@@ -2,10 +2,13 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { BOOKING_STATUSES, PAYMENT_STATUSES, SLOT_DATES, centres } from '../data/centres.js'
 import { useBookings } from '../context/useBookings.js'
+import { useAuth } from '../context/useAuth.js'
 
 function StaffDashboard() {
-  const { bookings, notifications, updateStatus, resetToSeedData, refreshData, refreshing, isFirebaseActive } = useBookings()
-  const [selectedCentre, setSelectedCentre] = useState('all')
+  const { userProfile, isStaff } = useAuth()
+  const { bookings, notifications, updateStatus, resetToSeedData, refreshData, refreshing } = useBookings()
+  const defaultCentre = userProfile?.assignedCentreId || (isStaff ? 'wardha-pacs' : 'all')
+  const [selectedCentre, setSelectedCentre] = useState(defaultCentre)
   const [selectedDate, setSelectedDate] = useState(SLOT_DATES[0]) // Today's bookings by default
   const [searchTerm, setSearchTerm] = useState('')
   const [sortBy, setSortBy] = useState('queue') // 'queue', 'time', 'token', 'name'
@@ -117,19 +120,18 @@ function StaffDashboard() {
             className={`btn btn-sm ${refreshing ? 'btn-secondary' : 'btn-primary'}`}
             onClick={refreshData}
             disabled={refreshing}
-            title="Re-fetch latest bookings from Firestore"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+            title="Re-fetch latest bookings"
           >
-            {refreshing ? '🔄 Refreshing...' : '🔄 Refresh Live Data'}
+            <span className="material-symbols-outlined text-sm">refresh</span>
+            <span>{refreshing ? 'Refreshing...' : 'Refresh Live Data'}</span>
           </button>
-          <span className={`badge ${isFirebaseActive ? 'badge-accent' : 'badge-neutral'}`}>
-            {isFirebaseActive ? '🔥 Firestore Live' : '⚡ Local State'}
-          </span>
         </div>
       </div>
 
       {actionNotice && (
         <div className="alert-banner alert-warning" role="status" style={{ animation: 'fadeIn 0.2s ease-in-out' }}>
-          <span className="alert-icon">✨</span>
+          <span className="material-symbols-outlined text-sm" style={{ color: '#003527' }}>check_circle</span>
           <div>
             <strong>Action Executed:</strong> {actionNotice}
           </div>
@@ -137,11 +139,11 @@ function StaffDashboard() {
       )}
 
       {activeCallout && (
-        <div className="callout-banner animate-pulse" style={{ borderLeft: '6px solid var(--primary, #16a34a)', background: '#ecfdf5', padding: '16px 20px', borderRadius: '8px', marginBottom: '20px' }}>
-          <span className="callout-icon" style={{ fontSize: '28px' }}>📢</span>
+        <div className="callout-banner animate-pulse" style={{ borderLeft: '6px solid #003527', background: '#ecfdf5', padding: '16px 20px', borderRadius: '8px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <span className="material-symbols-outlined" style={{ fontSize: '32px', color: '#003527' }}>volume_up</span>
           <div>
-            <strong style={{ fontSize: '1.2rem', color: '#065f46' }}>CALLING TOKEN {activeCallout.token}!</strong>
-            <p style={{ margin: '4px 0 0 0', color: '#047857' }}>
+            <strong style={{ fontSize: '1.15rem', color: '#065f46' }}>CALLING TOKEN {activeCallout.token}!</strong>
+            <p style={{ margin: '4px 0 0 0', color: '#047857', fontSize: '14px' }}>
               Farmer <strong>{activeCallout.name}</strong> from {activeCallout.village} (Vehicle: <code>{activeCallout.vehicleNumber}</code>) — Please proceed to Weighbridge / Counter 1 for sampling.
             </p>
           </div>
@@ -150,8 +152,11 @@ function StaffDashboard() {
 
       {/* Filter and Search Controls */}
       <div className="queue-controls-card panel">
-        <div className="control-group" style={{ flex: '1 1 200px' }}>
-          <label htmlFor="staff-search">🔍 Search Farmer / Token / Village</label>
+        <div className="control-group" style={{ flex: '1 1 220px' }}>
+          <label htmlFor="staff-search">
+            <span className="material-symbols-outlined text-sm">search</span>
+            <span>Search Farmer / Token / Village</span>
+          </label>
           <input
             id="staff-search"
             type="text"
@@ -161,8 +166,11 @@ function StaffDashboard() {
           />
         </div>
 
-        <div className="control-group" style={{ flex: '0 1 180px' }}>
-          <label htmlFor="staff-centre">🏢 Mandi Yard</label>
+        <div className="control-group" style={{ flex: '0 1 190px' }}>
+          <label htmlFor="staff-centre">
+            <span className="material-symbols-outlined text-sm">storefront</span>
+            <span>Mandi Yard</span>
+          </label>
           <select
             id="staff-centre"
             value={selectedCentre}
@@ -177,8 +185,11 @@ function StaffDashboard() {
           </select>
         </div>
 
-        <div className="control-group" style={{ flex: '0 1 160px' }}>
-          <label htmlFor="staff-date">📅 Date</label>
+        <div className="control-group" style={{ flex: '0 1 170px' }}>
+          <label htmlFor="staff-date">
+            <span className="material-symbols-outlined text-sm">calendar_month</span>
+            <span>Date</span>
+          </label>
           <select
             id="staff-date"
             value={selectedDate}
@@ -192,8 +203,11 @@ function StaffDashboard() {
           </select>
         </div>
 
-        <div className="control-group" style={{ flex: '0 1 180px' }}>
-          <label htmlFor="staff-sort">🔢 Sort By</label>
+        <div className="control-group" style={{ flex: '0 1 190px' }}>
+          <label htmlFor="staff-sort">
+            <span className="material-symbols-outlined text-sm">sort</span>
+            <span>Sort By</span>
+          </label>
           <select
             id="staff-sort"
             value={sortBy}
@@ -241,8 +255,9 @@ function StaffDashboard() {
       <div className="panel">
         <div className="table-header-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
           <div>
-            <h3>
-              📋 Today&apos;s Bookings List ({sortedBookings.length} Found)
+            <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span className="material-symbols-outlined" style={{ color: '#003527' }}>assignment</span>
+              <span>Today&apos;s Bookings List ({sortedBookings.length} Found)</span>
             </h3>
             {searchTerm && <small className="text-muted">Filtering for &ldquo;{searchTerm}&rdquo;</small>}
           </div>
@@ -251,15 +266,19 @@ function StaffDashboard() {
               className="btn btn-primary btn-sm"
               onClick={handleCallNext}
               disabled={activeInLine.length === 0}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
             >
-              📢 Call Next Farmer
+              <span className="material-symbols-outlined text-sm">campaign</span>
+              <span>Call Next Farmer</span>
             </button>
             <button
               className="btn btn-sm btn-secondary"
               onClick={resetToSeedData}
               title="Reset to default seed bookings"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
             >
-              🔄 Reset Sample Data
+              <span className="material-symbols-outlined text-sm">restart_alt</span>
+              <span>Reset Sample Data</span>
             </button>
           </div>
         </div>
@@ -313,13 +332,20 @@ function StaffDashboard() {
                       </td>
                       <td>
                         <strong>{row.name}</strong>
-                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted, #666)' }}>
-                          📞 +91 {row.mobile} · 📍 {row.village}
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted, #666)', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+                          <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>call</span>
+                          <span>+91 {row.mobile}</span>
+                          <span>·</span>
+                          <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>location_on</span>
+                          <span>{row.village}</span>
                         </div>
                       </td>
                       <td>
-                        <strong>🌾 {row.crop}</strong>
-                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted, #666)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <span className="material-symbols-outlined text-sm" style={{ color: '#003527' }}>grass</span>
+                          <strong>{row.crop}</strong>
+                        </div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted, #666)', marginTop: '2px' }}>
                           {row.quantity} Quintals
                         </div>
                       </td>
@@ -359,36 +385,40 @@ function StaffDashboard() {
                             className="btn btn-sm btn-success"
                             onClick={() => handleQuickAction(row.token, 'Completed', 'Completed')}
                             title="Mark as Completed & Paid"
-                            style={{ padding: '3px 7px', fontSize: '0.75rem' }}
+                            style={{ padding: '4px 8px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '2px' }}
                           >
-                            ✓ Done
+                            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>check</span>
+                            <span>Done</span>
                           </button>
                           <button
                             type="button"
                             className="btn btn-sm btn-danger"
                             onClick={() => handleQuickAction(row.token, 'Rejected')}
                             title="Mark Rejected (Quality failure / Moisture high)"
-                            style={{ padding: '3px 7px', fontSize: '0.75rem' }}
+                            style={{ padding: '4px 8px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '2px' }}
                           >
-                            🚫 Reject
+                            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>block</span>
+                            <span>Reject</span>
                           </button>
                           <button
                             type="button"
                             className="btn btn-sm btn-secondary"
                             onClick={() => handleQuickAction(row.token, 'Cancelled')}
                             title="Mark Cancelled"
-                            style={{ padding: '3px 7px', fontSize: '0.75rem' }}
+                            style={{ padding: '4px 8px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '2px' }}
                           >
-                            ❌ Cancel
+                            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>close</span>
+                            <span>Cancel</span>
                           </button>
                           <button
                             type="button"
                             className="btn btn-sm btn-secondary"
                             onClick={() => handleQuickAction(row.token, 'No-show')}
                             title="Mark No-show (Farmer did not arrive)"
-                            style={{ padding: '3px 7px', fontSize: '0.75rem' }}
+                            style={{ padding: '4px 8px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '2px' }}
                           >
-                            ⚠️ No-show
+                            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>person_off</span>
+                            <span>No-show</span>
                           </button>
                         </div>
                       </td>
@@ -405,7 +435,10 @@ function StaffDashboard() {
       {notifications && notifications.length > 0 && (
         <div className="panel" style={{ marginTop: '24px' }}>
           <div className="table-header-bar">
-            <h3>🔔 Live In-App Notifications Audit Log (Recent {Math.min(5, notifications.length)})</h3>
+            <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span className="material-symbols-outlined" style={{ color: '#4059aa' }}>notifications</span>
+              <span>Live In-App Notifications Audit Log (Recent {Math.min(5, notifications.length)})</span>
+            </h3>
             <span className="badge badge-neutral">Firestore &bull; Real-time</span>
           </div>
           <div className="notification-feed" style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '8px 0' }}>

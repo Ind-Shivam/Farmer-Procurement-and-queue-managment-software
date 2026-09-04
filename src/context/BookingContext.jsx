@@ -244,6 +244,41 @@ export function BookingProvider({ children }) {
       return null
     }
 
+    async function addCentre(centreData) {
+      const id = centreData.id || `centre_${Date.now()}`
+      const newCentre = {
+        id,
+        name: String(centreData.name || '').trim(),
+        location: String(centreData.location || '').trim(),
+        contact: String(centreData.contact || '').trim(),
+        openingHours: String(centreData.openingHours || '08:00 – 17:00').trim(),
+        capacityPerDay: Number(centreData.capacityPerDay) || 32,
+        acceptedCrops: Array.isArray(centreData.acceptedCrops) ? centreData.acceptedCrops : ['Paddy', 'Soybean', 'Cotton'],
+      }
+      setCentres((prev) => [...prev.filter((c) => c.id !== id), newCentre])
+      if (isFirebaseActive) {
+        try {
+          const { saveProcurementCentre } = await import('../services/firebaseService.js')
+          await saveProcurementCentre(newCentre)
+        } catch (e) {
+          console.warn('Could not save centre to Firestore:', e)
+        }
+      }
+      return newCentre
+    }
+
+    async function removeCentre(centreId) {
+      setCentres((prev) => prev.filter((c) => c.id !== centreId))
+      if (isFirebaseActive) {
+        try {
+          const { deleteProcurementCentre } = await import('../services/firebaseService.js')
+          await deleteProcurementCentre(centreId)
+        } catch (e) {
+          console.warn('Could not delete centre from Firestore:', e)
+        }
+      }
+    }
+
     return {
       bookings,
       centres,
@@ -258,6 +293,8 @@ export function BookingProvider({ children }) {
       cancelBooking,
       resetToSeedData,
       lookupBooking,
+      addCentre,
+      removeCentre,
     }
   }, [bookings, centres, slots, notifications, isFirebaseActive, loading, refreshing, refreshData])
 

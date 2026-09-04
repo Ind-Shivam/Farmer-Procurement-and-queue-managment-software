@@ -3,15 +3,16 @@ import { getSlotStatus, remainingSeats, statusLabel } from '../utils/slots.js'
 function SlotOptions({ slots = [], bookings = [], value, onChange, error }) {
   if (slots.length === 0) {
     return (
-      <div className="slot-empty-notice">
-        <p>⚠️ No procurement slots configured for this centre and date combination.</p>
+      <div className="date-notice-info-bar">
+        <span className="material-symbols-outlined text-sm">info</span>
+        <span>No procurement slots configured for this centre and date combination.</span>
       </div>
     )
   }
 
   return (
-    <div className="slot-selector-container">
-      <div className="slot-grid" role="radiogroup" aria-label="Procurement Time Slots">
+    <div>
+      <div className="time-slots-grid" role="radiogroup" aria-label="Procurement Time Slots">
         {slots.map((slot) => {
           const status = getSlotStatus(slot, bookings)
           const remaining = remainingSeats(slot, bookings)
@@ -21,7 +22,7 @@ function SlotOptions({ slots = [], bookings = [], value, onChange, error }) {
           return (
             <label
               key={slot.id}
-              className={`slot-card slot-status-${status} ${isSelected ? 'selected' : ''} ${isFull ? 'disabled' : ''}`}
+              className={`time-slot-card ${isSelected ? 'selected' : ''} ${isFull ? 'disabled' : ''}`}
             >
               <input
                 type="radio"
@@ -30,31 +31,55 @@ function SlotOptions({ slots = [], bookings = [], value, onChange, error }) {
                 checked={isSelected}
                 disabled={isFull}
                 onChange={() => onChange(slot.id)}
-                className="slot-radio-input"
+                style={{ display: 'none' }}
               />
-              <div className="slot-card-header">
-                <span className="slot-time-title">🕒 {slot.label}</span>
-                <span className={`slot-badge badge-${status}`}>
-                  {statusLabel(status)}
+              <div className="slot-card-top-row">
+                <span className="slot-card-time">
+                  <span className="material-symbols-outlined text-sm" style={{ color: '#003527' }}>schedule</span>
+                  {slot.label}
                 </span>
+                {isFull ? (
+                  <span className="date-status-badge badge-cap-red" style={{ width: 'auto', padding: '2px 8px' }}>
+                    FULL
+                  </span>
+                ) : status === 'fast' ? (
+                  <span className="date-status-badge badge-cap-yellow" style={{ width: 'auto', padding: '2px 8px' }}>
+                    FAST FILLING
+                  </span>
+                ) : (
+                  <span className="date-status-badge badge-cap-green" style={{ width: 'auto', padding: '2px 8px' }}>
+                    AVAILABLE
+                  </span>
+                )}
               </div>
-              <div className="slot-card-footer">
-                <span className="slot-seat-count">
+
+              <div className="slot-card-bottom-row">
+                <span>
                   {isFull ? (
-                    <strong className="text-danger">0 seats available</strong>
+                    <strong style={{ color: '#ba1a1a' }}>0 slots available</strong>
                   ) : remaining === 1 ? (
-                    <strong className="text-warning">⚡ Only 1 seat left!</strong>
+                    <strong style={{ color: '#854d0e' }}>⚡ Only 1 slot left!</strong>
                   ) : (
-                    <span><strong>{remaining}</strong> of {slot.capacity} seats left</span>
+                    <span><strong>{remaining}</strong> of {slot.capacity} slots left</span>
                   )}
                 </span>
-                {isSelected && <span className="slot-selected-mark">✓ Selected</span>}
+                {isSelected && (
+                  <span className="slot-card-selected-tag">
+                    <span className="material-symbols-outlined text-sm filled" style={{ color: '#003527' }}>check_circle</span>
+                    Selected
+                  </span>
+                )}
               </div>
             </label>
           )
         })}
       </div>
-      {error && <div className="field-error-msg">⚠️ {error}</div>}
+      {error && (
+        <div style={{ color: '#ba1a1a', fontSize: '13px', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <span className="material-symbols-outlined text-sm">error</span>
+          <span>{error}</span>
+        </div>
+      )}
     </div>
   )
 }

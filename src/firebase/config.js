@@ -1,5 +1,6 @@
 import { initializeApp, getApps } from 'firebase/app'
 import { getFirestore } from 'firebase/firestore'
+import { getAuth } from 'firebase/auth'
 
 const env = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env : (typeof process !== 'undefined' ? process.env : {})
 
@@ -27,12 +28,14 @@ export function isFirebaseConfigured() {
 
 let app = null
 let db = null
+let auth = null
 
 if (isFirebaseConfigured()) {
   try {
     app = getApps().length > 0 ? getApps()[0] : initializeApp(firebaseConfig)
     db = getFirestore(app)
-    console.info('🔥 Firebase Cloud Firestore connected successfully for project:', firebaseConfig.projectId)
+    auth = getAuth(app)
+    console.info('🔥 Firebase Cloud Firestore & Auth connected successfully for project:', firebaseConfig.projectId)
   } catch (err) {
     console.warn('⚠️ Error initializing Firebase:', err)
   }
@@ -40,4 +43,5 @@ if (isFirebaseConfigured()) {
   console.info('ℹ️ Firebase credentials not provided in .env — using local in-memory/localStorage state.')
 }
 
-export { app, db }
+export { app, db, auth }
+
