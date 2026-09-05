@@ -53,17 +53,9 @@ function FarmerPortal() {
       if (found) return [found]
     }
 
-    // Fallback 2: For single farmer mode / local demo mode
-    if (bookings && bookings.length > 0 && (!currentUser || userRole === 'farmer')) {
-      const activeUnfinished = bookings.filter((b) => !['Completed', 'Cancelled', 'Rejected'].includes(b.status))
-      if (activeUnfinished.length > 0) {
-        return [...activeUnfinished].sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))
-      }
-      return [bookings[bookings.length - 1]]
-    }
-
+    // No fallback to other farmers' bookings. A brand-new farmer should see an empty dashboard until they create their own booking.
     return []
-  }, [bookings, currentUserUid, userMobile, storedMobile, storedTokens, lastToken, farmerName, currentUser, userRole])
+  }, [bookings, currentUserUid, userMobile, storedMobile, storedTokens, lastToken, farmerName])
 
   // Identify active booking for the current farmer
   const activeBooking = useMemo(() => {
