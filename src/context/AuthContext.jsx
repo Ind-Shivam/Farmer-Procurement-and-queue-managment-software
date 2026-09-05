@@ -9,6 +9,7 @@ import {
   setUserProfile as saveUserProfileDoc,
   signUpFarmer,
 } from '../services/authService.js'
+import { clearFarmerSessionStorage } from '../utils/storage.js'
 import { AuthContext } from './AuthContext.js'
 
 export function AuthProvider({ children }) {
@@ -86,6 +87,7 @@ export function AuthProvider({ children }) {
   // Logout handler
   const logout = useCallback(async () => {
     setAuthError(null)
+    clearFarmerSessionStorage()
     await logoutUser()
     setCurrentUser(null)
     setUserProfile(null)

@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/useAuth.js'
 import { useBookings } from '../context/useBookings.js'
 import { getLastBookingToken } from '../utils/storage.js'
+import { normalizeMobile } from '../utils/validation.js'
 import KisanSetuLogo from '../components/KisanSetuLogo.jsx'
 
 function AppLayout() {
@@ -14,8 +15,27 @@ function AppLayout() {
   const [showSupportModal, setShowSupportModal] = useState(false)
   const [showNotifMenu, setShowNotifMenu] = useState(false)
 
-  const lastSavedToken = getLastBookingToken()
-  const latestToken = lastSavedToken || (bookings.length > 0 ? bookings[bookings.length - 1].token : null)
+  const lastSavedToken = userRole === 'farmer'
+    ? getLastBookingToken(currentUser?.uid || userProfile?.mobile || currentUser?.email || '')
+    : ''
+
+  const latestToken = useMemo(() => {
+    if (userRole !== 'farmer') return null
+
+    const userMobile = normalizeMobile(userProfile?.mobile)
+    const currentUid = currentUser?.uid || ''
+
+    const filtered = (bookings || []).filter((booking) => {
+      if (currentUid && booking.ownerUid && booking.ownerUid === currentUid) return true
+      if (userMobile && normalizeMobile(booking.mobile) === userMobile) return true
+      if (lastSavedToken && booking.token === lastSavedToken) return true
+      return false
+    })
+
+    if (filtered.length === 0) return null
+
+    return [...filtered].sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))[0].token || null
+  }, [bookings, currentUser, lastSavedToken, userProfile, userRole])
 
 
   async function handleLogout() {

@@ -52,74 +52,99 @@ const LAST_TOKEN_KEY = 'kisansetu-last-booking-token'
 const FARMER_MOBILE_KEY = 'kisansetu-farmer-mobile'
 const FARMER_TOKENS_KEY = 'kisansetu-farmer-tokens-list'
 
-export function saveLastBookingToken(token) {
-  if (!token) return
+function getScopedKey(baseKey, userKey = '') {
+  const clean = String(userKey || '').trim()
+  return clean ? `${baseKey}:${clean}` : baseKey
+}
+
+export function clearFarmerSessionStorage() {
   try {
+    const keysToClear = [LAST_TOKEN_KEY, FARMER_MOBILE_KEY, FARMER_TOKENS_KEY]
     if (typeof localStorage !== 'undefined') {
-      localStorage.setItem(LAST_TOKEN_KEY, String(token).trim().toUpperCase())
+      keysToClear.forEach((key) => localStorage.removeItem(key))
     } else {
-      memoryStore[LAST_TOKEN_KEY] = String(token).trim().toUpperCase()
+      keysToClear.forEach((key) => delete memoryStore[key])
+    }
+  } catch (err) {
+    console.warn('Unable to clear farmer session storage:', err)
+  }
+}
+
+export function saveLastBookingToken(token, userKey = '') {
+  if (!token) return
+  const key = getScopedKey(LAST_TOKEN_KEY, userKey)
+  try {
+    const value = String(token).trim().toUpperCase()
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(key, value)
+    } else {
+      memoryStore[key] = value
     }
   } catch {}
 }
 
-export function getLastBookingToken() {
+export function getLastBookingToken(userKey = '') {
+  const key = getScopedKey(LAST_TOKEN_KEY, userKey)
   try {
     if (typeof localStorage !== 'undefined') {
-      return localStorage.getItem(LAST_TOKEN_KEY) || ''
+      return localStorage.getItem(key) || ''
     }
-    return memoryStore[LAST_TOKEN_KEY] || ''
+    return memoryStore[key] || ''
   } catch {
     return ''
   }
 }
 
-export function saveFarmerMobile(mobile) {
+export function saveFarmerMobile(mobile, userKey = '') {
   if (!mobile) return
+  const key = getScopedKey(FARMER_MOBILE_KEY, userKey)
   try {
     const clean = String(mobile).replace(/\D/g, '').slice(-10)
     if (typeof localStorage !== 'undefined') {
-      localStorage.setItem(FARMER_MOBILE_KEY, clean)
+      localStorage.setItem(key, clean)
     } else {
-      memoryStore[FARMER_MOBILE_KEY] = clean
+      memoryStore[key] = clean
     }
   } catch {}
 }
 
-export function getFarmerMobile() {
+export function getFarmerMobile(userKey = '') {
+  const key = getScopedKey(FARMER_MOBILE_KEY, userKey)
   try {
     if (typeof localStorage !== 'undefined') {
-      return localStorage.getItem(FARMER_MOBILE_KEY) || ''
+      return localStorage.getItem(key) || ''
     }
-    return memoryStore[FARMER_MOBILE_KEY] || ''
+    return memoryStore[key] || ''
   } catch {
     return ''
   }
 }
 
-export function addFarmerToken(token) {
+export function addFarmerToken(token, userKey = '') {
   if (!token) return
+  const key = getScopedKey(FARMER_TOKENS_KEY, userKey)
   try {
     const clean = String(token).trim().toUpperCase()
-    const current = getFarmerTokens()
+    const current = getFarmerTokens(userKey)
     if (!current.includes(clean)) {
       const updated = [clean, ...current].slice(0, 50)
       if (typeof localStorage !== 'undefined') {
-        localStorage.setItem(FARMER_TOKENS_KEY, JSON.stringify(updated))
+        localStorage.setItem(key, JSON.stringify(updated))
       } else {
-        memoryStore[FARMER_TOKENS_KEY] = JSON.stringify(updated)
+        memoryStore[key] = JSON.stringify(updated)
       }
     }
   } catch {}
 }
 
-export function getFarmerTokens() {
+export function getFarmerTokens(userKey = '') {
+  const key = getScopedKey(FARMER_TOKENS_KEY, userKey)
   try {
     let raw = ''
     if (typeof localStorage !== 'undefined') {
-      raw = localStorage.getItem(FARMER_TOKENS_KEY)
+      raw = localStorage.getItem(key)
     } else {
-      raw = memoryStore[FARMER_TOKENS_KEY]
+      raw = memoryStore[key]
     }
     if (!raw) return []
     const parsed = JSON.parse(raw)

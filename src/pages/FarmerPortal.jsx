@@ -18,9 +18,15 @@ function FarmerPortal() {
 
   const currentUserUid = currentUser?.uid || ''
   const userMobile = normalizeMobile(userProfile?.mobile)
-  const storedMobile = normalizeMobile(getFarmerMobile())
-  const storedTokens = useMemo(() => getFarmerTokens(), [])
-  const lastToken = useMemo(() => getLastBookingToken(), [])
+  const storedMobile = normalizeMobile(getFarmerMobile(currentUserUid || userMobile || currentUser?.email || ''))
+  const storedTokens = useMemo(
+    () => getFarmerTokens(currentUserUid || userMobile || currentUser?.email || ''),
+    [currentUserUid, userMobile, currentUser],
+  )
+  const lastToken = useMemo(
+    () => getLastBookingToken(currentUserUid || userMobile || currentUser?.email || ''),
+    [currentUserUid, userMobile, currentUser],
+  )
   const farmerName = userProfile?.name || currentUser?.displayName || currentUser?.email?.split('@')[0] || 'Farmer'
 
   // Multi-layered identification of farmer's bookings
