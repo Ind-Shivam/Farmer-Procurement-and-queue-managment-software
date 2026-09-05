@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/useAuth.js'
 import { useBookings } from '../context/useBookings.js'
+import { getLastBookingToken } from '../utils/storage.js'
 import KisanSetuLogo from '../components/KisanSetuLogo.jsx'
 
 function AppLayout() {
@@ -13,7 +14,9 @@ function AppLayout() {
   const [showSupportModal, setShowSupportModal] = useState(false)
   const [showNotifMenu, setShowNotifMenu] = useState(false)
 
-  const latestToken = bookings.length > 0 ? bookings[bookings.length - 1].token : null
+  const lastSavedToken = getLastBookingToken()
+  const latestToken = lastSavedToken || (bookings.length > 0 ? bookings[bookings.length - 1].token : null)
+
 
   async function handleLogout() {
     setShowProfileMenu(false)

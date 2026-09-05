@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { CROPS, SLOT_DATES, centres, slots } from '../data/centres.js'
 import { useAuth } from '../context/useAuth.js'
 import { useBookings } from '../context/useBookings.js'
+import { getFarmerMobile } from '../utils/storage.js'
 import {
   availableSeatCount,
   findCentre,
@@ -64,7 +65,7 @@ function getDayAbbr(dateStr) {
 function FarmerBookingForm({ title = 'Book Slot', eyebrow = 'Direct Slot Reservation' }) {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const { userProfile, currentUser } = useAuth()
+  const { userProfile, currentUser, updateUserProfile } = useAuth()
   const { bookings, centres: dynamicCentres, submitBooking } = useBookings()
 
   const activeCentres = useMemo(
@@ -78,7 +79,7 @@ function FarmerBookingForm({ title = 'Book Slot', eyebrow = 'Direct Slot Reserva
   const [form, setForm] = useState(() => ({
     ...defaultForm,
     name: userProfile?.name || currentUser?.displayName || '',
-    mobile: userProfile?.mobile || '',
+    mobile: userProfile?.mobile || getFarmerMobile() || '',
     village: userProfile?.village || '',
     centreId: initialCentre,
     date: initialDate,
@@ -215,6 +216,15 @@ function FarmerBookingForm({ title = 'Book Slot', eyebrow = 'Direct Slot Reserva
         window.scrollTo({ top: 120, behavior: 'smooth' })
         setSubmitting(false)
         return
+      }
+
+      // Sync farmer info to user profile if missing
+      if (updateUserProfile && (!userProfile?.mobile || !userProfile?.village)) {
+        updateUserProfile({
+          mobile: form.mobile,
+          village: form.village || userProfile?.village || '',
+          name: form.name || userProfile?.name || '',
+        })
       }
 
       // Navigate to confirmation screen

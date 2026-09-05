@@ -1,30 +1,73 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { centres } from '../data/centres.js'
+import { centres, windows } from '../data/centres.js'
 import { useAuth } from '../context/useAuth.js'
 import { useBookings } from '../context/useBookings.js'
+import { getFarmerMobile, getFarmerTokens, getLastBookingToken } from '../utils/storage.js'
 import { normalizeMobile } from '../utils/validation.js'
 
 function FarmerPortal() {
-  const { userProfile, currentUser } = useAuth()
-
-  const { bookings } = useBookings()
+  const { userProfile, currentUser, userRole } = useAuth()
+  const { bookings, centres: dynamicCentres } = useBookings()
   const [showSupportModal, setShowSupportModal] = useState(false)
-  const currentUserUid = currentUser?.uid || ''
-  const userMobile = normalizeMobile(userProfile?.mobile)
 
-  const farmerBookings = useMemo(
-    () => bookings.filter((booking) => (
-      (currentUserUid && booking.ownerUid === currentUserUid) ||
-      (userMobile && normalizeMobile(booking.mobile) === userMobile)
-    )),
-    [bookings, currentUserUid, userMobile],
+  const allCentres = useMemo(
+    () => (dynamicCentres && dynamicCentres.length > 0 ? dynamicCentres : centres),
+    [dynamicCentres],
   )
 
+  const currentUserUid = currentUser?.uid || ''
+  const userMobile = normalizeMobile(userProfile?.mobile)
+  const storedMobile = normalizeMobile(getFarmerMobile())
+  const storedTokens = useMemo(() => getFarmerTokens(), [])
+  const lastToken = useMemo(() => getLastBookingToken(), [])
   const farmerName = userProfile?.name || currentUser?.displayName || currentUser?.email?.split('@')[0] || 'Farmer'
 
-  // Identify active booking for the current farmer or latest system booking
+  // Multi-layered identification of farmer's bookings
+  const farmerBookings = useMemo(() => {
+    const userTokensSet = new Set(storedTokens)
+    if (lastToken) userTokensSet.add(lastToken)
+
+    const filtered = (bookings || []).filter((booking) => {
+      const bMobile = normalizeMobile(booking.mobile)
+      const isOwner = currentUserUid && booking.ownerUid && booking.ownerUid === currentUserUid
+      const isProfileMobile = userMobile && bMobile && bMobile === userMobile
+      const isStoredMobile = storedMobile && bMobile && bMobile === storedMobile
+      const isUserToken = booking.token && userTokensSet.has(booking.token)
+      const isNameMatch =
+        farmerName &&
+        farmerName !== 'Farmer' &&
+        booking.name &&
+        booking.name.toLowerCase().trim() === farmerName.toLowerCase().trim()
+
+      return Boolean(isOwner || isProfileMobile || isStoredMobile || isUserToken || isNameMatch)
+    })
+
+    if (filtered.length > 0) {
+      return [...filtered].sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))
+    }
+
+    // Fallback 1: If user has a last booked token, find it in bookings
+    if (lastToken) {
+      const found = (bookings || []).find((b) => b.token === lastToken)
+      if (found) return [found]
+    }
+
+    // Fallback 2: For single farmer mode / local demo mode
+    if (bookings && bookings.length > 0 && (!currentUser || userRole === 'farmer')) {
+      const activeUnfinished = bookings.filter((b) => !['Completed', 'Cancelled', 'Rejected'].includes(b.status))
+      if (activeUnfinished.length > 0) {
+        return [...activeUnfinished].sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))
+      }
+      return [bookings[bookings.length - 1]]
+    }
+
+    return []
+  }, [bookings, currentUserUid, userMobile, storedMobile, storedTokens, lastToken, farmerName, currentUser, userRole])
+
+  // Identify active booking for the current farmer
   const activeBooking = useMemo(() => {
+    if (!farmerBookings || farmerBookings.length === 0) return null
     const match = farmerBookings.find((booking) => !['Completed', 'Cancelled', 'Rejected'].includes(booking.status))
     return match || farmerBookings[0] || null
   }, [farmerBookings])
@@ -37,7 +80,9 @@ function FarmerPortal() {
 
   const recentPaymentAmount = useMemo(() => {
     if (activeBooking?.quantity) {
-      return Number(activeBooking.quantity) * 2275 // MSP rate
+      const rates = { Wheat: 2275, Paddy: 2183, Soybean: 4600, Cotton: 6620, Mustard: 5450, Gram: 5440, Maize: 2090 }
+      const rate = rates[activeBooking.crop] || 2275
+      return Number(activeBooking.quantity) * rate
     }
     return 0
   }, [activeBooking])
@@ -45,30 +90,61 @@ function FarmerPortal() {
   // Centre name lookup
   const centreName = useMemo(() => {
     if (!activeBooking) return 'No booking yet'
-    const found = centres.find((c) => c.id === activeBooking.centreId)
-    return found ? found.name : 'Unknown centre'
-  }, [activeBooking])
+    const found = allCentres.find((c) => c.id === activeBooking.centreId)
+    return found ? found.name : activeBooking.centreId || 'Unknown centre'
+  }, [activeBooking, allCentres])
 
   // Display slot date & time
-  const slotDateDisplay = activeBooking?.date || 'No booking yet'
-  const slotTimeDisplay = activeBooking?.slotId ? activeBooking.slotId.split('_')[2] : ''
+  const slotDateDisplay = activeBooking?.date || 'None Scheduled'
+  const slotTimeDisplay = useMemo(() => {
+    if (!activeBooking?.slotId) return ''
+    const parts = activeBooking.slotId.split('_')
+    const winKey = parts[2] || ''
+    const foundWindow = windows.find((w) => w.key === winKey)
+    return foundWindow ? foundWindow.label : winKey
+  }, [activeBooking])
 
   // Token code
   const tokenCode = activeBooking?.token || ''
+
+  // Status badge config
+  const statusConfig = useMemo(() => {
+    if (!activeBooking) {
+      return { label: 'No Active Booking', className: 'badge-status-empty', icon: 'event_busy' }
+    }
+    const status = activeBooking.status || 'Booked'
+    switch (status) {
+      case 'At Gate':
+        return { label: 'At Gate (Serving)', className: 'badge-status-serving', icon: 'meeting_room' }
+      case 'Quality Check':
+        return { label: 'Quality Check Stage', className: 'badge-status-serving', icon: 'fact_check' }
+      case 'Weighment':
+        return { label: 'Weighment in Progress', className: 'badge-status-serving', icon: 'scale' }
+      case 'Accepted':
+        return { label: 'Produce Accepted', className: 'badge-status-accepted', icon: 'verified' }
+      case 'Completed':
+        return { label: 'Procurement Complete', className: 'badge-status-completed', icon: 'check_circle' }
+      case 'Cancelled':
+        return { label: 'Cancelled', className: 'badge-status-cancelled', icon: 'cancel' }
+      case 'Rejected':
+        return { label: 'Rejected', className: 'badge-status-cancelled', icon: 'error' }
+      default:
+        return { label: status || 'Scheduled', className: 'status-badge-scheduled', icon: 'schedule' }
+    }
+  }, [activeBooking])
 
   // Recent procurement history list
   const historyList = useMemo(() => {
     if (!farmerBookings || farmerBookings.length === 0) return []
 
-    const dynamicRows = farmerBookings.slice(0, 3).map((b) => ({
+    return farmerBookings.slice(0, 5).map((b) => ({
       id: b.token,
       date: b.date || 'Unknown date',
       crop: b.crop || 'Unknown crop',
       quantity: String(b.quantity || 0),
-      status: b.status === 'Completed' ? 'Processed' : b.status || 'Processed',
+      status: b.status || 'Booked',
+      paymentStatus: b.paymentStatus || 'Pending',
     }))
-
-    return dynamicRows
   }, [farmerBookings])
 
   return (
@@ -95,8 +171,10 @@ function FarmerPortal() {
             <span className="kpi-label">Upcoming Slot</span>
           </div>
           <div className="kpi-value-block">
-            <h2 className="kpi-main-value">{slotDateDisplay}, {slotTimeDisplay}</h2>
-            <p className="kpi-subtext">{centreName}</p>
+            <h2 className="kpi-main-value">
+              {activeBooking ? `${slotDateDisplay}${slotTimeDisplay ? `, ${slotTimeDisplay}` : ''}` : 'None Scheduled'}
+            </h2>
+            <p className="kpi-subtext">{activeBooking ? centreName : 'Book a mandi slot anytime'}</p>
           </div>
           <div className="kpi-card-corner-shape" aria-hidden="true" />
         </div>
@@ -112,12 +190,14 @@ function FarmerPortal() {
                 <path d="M12 15h6" />
               </svg>
             </span>
-            <span className="kpi-label">Recent Payment</span>
+            <span className="kpi-label">Estimated MSP Value</span>
           </div>
           <div className="kpi-value-block">
-            <h2 className="kpi-main-value">₹{recentPaymentAmount.toLocaleString('en-IN')} processed</h2>
-            <p className="kpi-subtext kpi-status-success">
-              <span className="check-icon">✓</span> Settled
+            <h2 className="kpi-main-value">
+              {recentPaymentAmount > 0 ? `₹${recentPaymentAmount.toLocaleString('en-IN')}` : '₹0'}
+            </h2>
+            <p className={`kpi-subtext ${activeBooking?.paymentStatus === 'Completed' ? 'kpi-status-success' : ''}`}>
+              {activeBooking ? `Status: ${activeBooking.paymentStatus || 'Pending'}` : 'No active transactions'}
             </p>
           </div>
           <div className="kpi-card-corner-shape" aria-hidden="true" />
@@ -133,11 +213,11 @@ function FarmerPortal() {
                 <path d="M12 22V12" />
               </svg>
             </span>
-            <span className="kpi-label">Total Procurement</span>
+            <span className="kpi-label">Total Produce Registered</span>
           </div>
           <div className="kpi-value-block">
             <h2 className="kpi-main-value">{totalQuintals} Quintals</h2>
-            <p className="kpi-subtext">Wheat (Rabi Season)</p>
+            <p className="kpi-subtext">{activeBooking ? `${activeBooking.crop || 'Crop'} (Govt. MSP)` : 'Rabi / Kharif Season'}</p>
           </div>
           <div className="kpi-card-corner-shape" aria-hidden="true" />
         </div>
@@ -149,60 +229,90 @@ function FarmerPortal() {
         <div className="dashboard-card active-booking-panel">
           <div className="dashboard-card-header">
             <h3 className="card-header-title">Active Booking</h3>
-            <span className="status-badge-scheduled">
-              <span className="material-symbols-outlined status-badge-icon" aria-hidden="true">schedule</span>
-              {activeBooking?.status || 'No booking'}
+            <span className={statusConfig.className}>
+              <span className="material-symbols-outlined status-badge-icon" aria-hidden="true">
+                {statusConfig.icon}
+              </span>
+              {statusConfig.label}
             </span>
           </div>
 
-          <div className="active-booking-content">
-            <div className="active-booking-body">
-              <div className="token-icon-box" aria-hidden="true">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z" />
-                  <path d="M16 8h-8" />
-                  <path d="M16 12h-8" />
-                  <path d="M11 16H8" />
-                </svg>
-              </div>
+          {activeBooking ? (
+            <div className="active-booking-content">
+              <div className="active-booking-body">
+                <div className="token-icon-box" aria-hidden="true">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z" />
+                    <path d="M16 8h-8" />
+                    <path d="M16 12h-8" />
+                    <path d="M11 16H8" />
+                  </svg>
+                </div>
 
-              <div className="token-details-box">
-                <span className="token-upper-label">TOKEN NUMBER</span>
-                <h4 className="token-big-code">#{tokenCode}</h4>
-                <div className="token-location-row">
-                  <span className="token-info-item">
-                    <span className="material-symbols-outlined" aria-hidden="true">location_on</span>
-                    Center: {centreName}
-                  </span>
-                  <span className="token-info-item">
-                    <span className="material-symbols-outlined" aria-hidden="true">calendar_month</span>
-                    {slotDateDisplay} - {slotTimeDisplay}
-                  </span>
+                <div className="token-details-box">
+                  <span className="token-upper-label">TOKEN NUMBER</span>
+                  <h4 className="token-big-code">#{tokenCode}</h4>
+                  <div className="token-location-row">
+                    <span className="token-info-item">
+                      <span className="material-symbols-outlined" aria-hidden="true">location_on</span>
+                      Center: <strong>{centreName}</strong>
+                    </span>
+                    <span className="token-info-item">
+                      <span className="material-symbols-outlined" aria-hidden="true">calendar_month</span>
+                      {slotDateDisplay} {slotTimeDisplay ? `• ${slotTimeDisplay}` : ''}
+                    </span>
+                    <div className="token-meta-tags">
+                      <span className="token-crop-pill">
+                        🌾 {activeBooking.crop} &bull; {activeBooking.quantity} Qtl
+                      </span>
+                      {activeBooking.vehicleNumber && (
+                        <span className="token-crop-pill" style={{ background: '#f1f5f9', color: '#334155', borderColor: '#cbd5e1' }}>
+                          🚛 {activeBooking.vehicleNumber}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="active-booking-actions">
-              <Link
-                to={`/booking/${tokenCode}`}
-                className="btn-download-token"
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="7 10 12 15 17 10" />
-                  <line x1="12" x2="12" y1="15" y2="3" />
-                </svg>
-                <span>Download Token</span>
-              </Link>
+              <div className="active-booking-actions">
+                <Link
+                  to={`/booking/${tokenCode}`}
+                  className="btn-download-token"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" x2="12" y1="15" y2="3" />
+                  </svg>
+                  <span>Download Token</span>
+                </Link>
 
-              <Link
-                to="/book"
-                className="btn-modify-booking"
-              >
-                Modify Booking
+                <Link
+                  to={`/queue?token=${tokenCode}`}
+                  className="btn-modify-booking"
+                >
+                  Track Live Queue
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <div className="active-booking-empty-content">
+              <div className="empty-booking-left">
+                <div className="empty-booking-icon-box" aria-hidden="true">
+                  <span className="material-symbols-outlined" style={{ fontSize: '28px' }}>calendar_today</span>
+                </div>
+                <div className="empty-booking-text">
+                  <h4>No Active Mandi Reservation</h4>
+                  <p>You do not have any upcoming procurement slots booked. Reserve a slot now to receive your official token pass.</p>
+                </div>
+              </div>
+              <Link to="/book" className="btn-book-now-cta">
+                <span className="material-symbols-outlined text-sm" aria-hidden="true">add_circle</span>
+                <span>Book Mandi Slot Now</span>
               </Link>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Right Card: Quick Actions */}
@@ -217,9 +327,9 @@ function FarmerPortal() {
               <span>Book New Slot</span>
             </Link>
 
-            <Link to={`/booking/${tokenCode}`} className="btn-quick-secondary">
-              <span className="material-symbols-outlined btn-action-icon" aria-hidden="true">history</span>
-              <span>View Payment History</span>
+            <Link to={tokenCode ? `/booking/${tokenCode}` : '/queue'} className="btn-quick-secondary">
+              <span className="material-symbols-outlined btn-action-icon" aria-hidden="true">hourglass_empty</span>
+              <span>Live Queue Board</span>
             </Link>
 
             <button
@@ -244,25 +354,45 @@ function FarmerPortal() {
           <table className="procurement-history-table">
             <thead>
               <tr>
+                <th>Token</th>
                 <th>Date</th>
                 <th>Crop</th>
                 <th>Quantity (Qtl)</th>
-                <th>Status</th>
+                <th>Procurement Status</th>
+                <th>Payment</th>
               </tr>
             </thead>
             <tbody>
-              {historyList.map((row) => (
-                <tr key={row.id}>
-                  <td className="cell-date">{row.date}</td>
-                  <td className="cell-crop">{row.crop}</td>
-                  <td className="cell-qty">{row.quantity}</td>
-                  <td className="cell-status">
-                    <span className="status-pill-processed">
-                      {row.status}
-                    </span>
+              {historyList.length > 0 ? (
+                historyList.map((row) => (
+                  <tr key={row.id}>
+                    <td className="cell-token">
+                      <Link to={`/booking/${row.id}`} style={{ fontWeight: '700', color: '#064e3b', textDecoration: 'underline' }}>
+                        #{row.id}
+                      </Link>
+                    </td>
+                    <td className="cell-date">{row.date}</td>
+                    <td className="cell-crop">{row.crop}</td>
+                    <td className="cell-qty">{row.quantity} Qtl</td>
+                    <td className="cell-status">
+                      <span className="status-pill-processed">
+                        {row.status}
+                      </span>
+                    </td>
+                    <td className="cell-payment">
+                      <span style={{ fontSize: '13px', fontWeight: '600', color: row.paymentStatus === 'Completed' ? '#166534' : '#b45309' }}>
+                        {row.paymentStatus}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="6" style={{ textAlign: 'center', padding: '24px', color: '#64748b' }}>
+                    No procurement records found yet. Book a slot to get started!
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
@@ -308,3 +438,4 @@ function FarmerPortal() {
 }
 
 export default FarmerPortal
+

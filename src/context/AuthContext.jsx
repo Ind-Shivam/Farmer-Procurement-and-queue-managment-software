@@ -6,6 +6,7 @@ import {
   loginUser,
   loginWithGoogle,
   logoutUser,
+  setUserProfile as saveUserProfileDoc,
   signUpFarmer,
 } from '../services/authService.js'
 import { AuthContext } from './AuthContext.js'
@@ -100,6 +101,20 @@ export function AuthProvider({ children }) {
     }
   }, [currentUser])
 
+  // Update profile locally & sync to Firestore
+  const updateUserProfile = useCallback(async (partialData) => {
+    if (!partialData) return
+    setUserProfile((prev) => {
+      const next = { ...(prev || {}), ...partialData }
+      if (currentUser?.uid && isFb) {
+        saveUserProfileDoc(currentUser.uid, next).catch((e) => {
+          console.warn('Could not update profile doc in Firestore:', e)
+        })
+      }
+      return next
+    })
+  }, [currentUser, isFb])
+
   const userRole = userProfile?.role || 'farmer'
   const isFarmer = userRole === 'farmer'
   const isStaff = userRole === 'staff'
@@ -121,6 +136,7 @@ export function AuthProvider({ children }) {
       signup,
       logout,
       refreshProfile,
+      updateUserProfile,
       isAuthenticated: Boolean(currentUser),
     }),
     [
@@ -137,8 +153,10 @@ export function AuthProvider({ children }) {
       signup,
       logout,
       refreshProfile,
+      updateUserProfile,
     ],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
+

@@ -47,3 +47,85 @@ export function clearStoredBookings() {
     console.warn('Unable to clear storage:', err)
   }
 }
+
+const LAST_TOKEN_KEY = 'kisansetu-last-booking-token'
+const FARMER_MOBILE_KEY = 'kisansetu-farmer-mobile'
+const FARMER_TOKENS_KEY = 'kisansetu-farmer-tokens-list'
+
+export function saveLastBookingToken(token) {
+  if (!token) return
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(LAST_TOKEN_KEY, String(token).trim().toUpperCase())
+    } else {
+      memoryStore[LAST_TOKEN_KEY] = String(token).trim().toUpperCase()
+    }
+  } catch {}
+}
+
+export function getLastBookingToken() {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      return localStorage.getItem(LAST_TOKEN_KEY) || ''
+    }
+    return memoryStore[LAST_TOKEN_KEY] || ''
+  } catch {
+    return ''
+  }
+}
+
+export function saveFarmerMobile(mobile) {
+  if (!mobile) return
+  try {
+    const clean = String(mobile).replace(/\D/g, '').slice(-10)
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(FARMER_MOBILE_KEY, clean)
+    } else {
+      memoryStore[FARMER_MOBILE_KEY] = clean
+    }
+  } catch {}
+}
+
+export function getFarmerMobile() {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      return localStorage.getItem(FARMER_MOBILE_KEY) || ''
+    }
+    return memoryStore[FARMER_MOBILE_KEY] || ''
+  } catch {
+    return ''
+  }
+}
+
+export function addFarmerToken(token) {
+  if (!token) return
+  try {
+    const clean = String(token).trim().toUpperCase()
+    const current = getFarmerTokens()
+    if (!current.includes(clean)) {
+      const updated = [clean, ...current].slice(0, 50)
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(FARMER_TOKENS_KEY, JSON.stringify(updated))
+      } else {
+        memoryStore[FARMER_TOKENS_KEY] = JSON.stringify(updated)
+      }
+    }
+  } catch {}
+}
+
+export function getFarmerTokens() {
+  try {
+    let raw = ''
+    if (typeof localStorage !== 'undefined') {
+      raw = localStorage.getItem(FARMER_TOKENS_KEY)
+    } else {
+      raw = memoryStore[FARMER_TOKENS_KEY]
+    }
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+}
+

@@ -1,16 +1,17 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { SLOT_DATES, centres, windows } from '../data/centres.js'
 import { useBookings } from '../context/useBookings.js'
 import { findBookingByTokenOrMobile } from '../utils/booking.js'
 import { getLiveQueueForSlot, getQueueSummary } from '../utils/queue.js'
 import { findCentre, findSlot } from '../utils/slots.js'
+import { getLastBookingToken } from '../utils/storage.js'
 
 function QueueStatus() {
   const [searchParams, setSearchParams] = useSearchParams()
   const { bookings, notifications, refreshData, refreshing } = useBookings()
 
-  const initialToken = searchParams.get('token') || ''
+  const initialToken = searchParams.get('token') || getLastBookingToken() || ''
   const initialCentre = searchParams.get('centre') || centres[0].id
   const initialDate = searchParams.get('date') || SLOT_DATES[0]
   const initialWindow = searchParams.get('window') || windows[0].key
@@ -20,6 +21,22 @@ function QueueStatus() {
   const [selectedCentre, setSelectedCentre] = useState(initialCentre)
   const [selectedDate, setSelectedDate] = useState(initialDate)
   const [selectedWindow, setSelectedWindow] = useState(initialWindow)
+
+  // Auto sync filter if activeToken belongs to a known booking
+  useEffect(() => {
+    if (activeToken && bookings && bookings.length > 0) {
+      const match = findBookingByTokenOrMobile(bookings, activeToken)
+      if (match) {
+        if (match.centreId && match.centreId !== selectedCentre) setSelectedCentre(match.centreId)
+        if (match.date && match.date !== selectedDate) setSelectedDate(match.date)
+        if (match.slotId) {
+          const win = match.slotId.split('_')[2]
+          if (win && win !== selectedWindow) setSelectedWindow(win)
+        }
+      }
+    }
+  }, [activeToken, bookings])
+
 
   // Construct target slot ID
   const currentSlotId = `${selectedCentre}_${selectedDate}_${selectedWindow}`

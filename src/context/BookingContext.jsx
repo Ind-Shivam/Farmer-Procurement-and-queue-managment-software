@@ -21,7 +21,14 @@ import {
   findBookingByTokenOrMobile,
   validateBookingForm,
 } from '../utils/booking.js'
-import { clearStoredBookings, loadBookings, saveBookings } from '../utils/storage.js'
+import {
+  addFarmerToken,
+  clearStoredBookings,
+  loadBookings,
+  saveBookings,
+  saveFarmerMobile,
+  saveLastBookingToken,
+} from '../utils/storage.js'
 import { BookingContext } from './BookingContext.js'
 
 export function BookingProvider({ children }) {
@@ -60,8 +67,15 @@ export function BookingProvider({ children }) {
         // 3. Real-time Firestore subscriptions
         unsubBookings = subscribeToBookings((fbBookings) => {
           const nextBookings = Array.isArray(fbBookings) ? fbBookings : []
-          setBookings(nextBookings)
-          saveBookings(nextBookings)
+          const localStored = loadBookings([])
+          const merged = [...nextBookings]
+          for (const localB of localStored) {
+            if (localB?.token && !merged.some((m) => m.token === localB.token)) {
+              merged.push(localB)
+            }
+          }
+          setBookings(merged)
+          saveBookings(merged)
         })
 
         unsubCentres = subscribeToCentres((fbCentres) => {
@@ -112,8 +126,15 @@ export function BookingProvider({ children }) {
           readNotifications(),
         ])
         if (freshBookings && freshBookings.length > 0) {
-          setBookings(freshBookings)
-          saveBookings(freshBookings)
+          const localStored = loadBookings([])
+          const merged = [...freshBookings]
+          for (const localB of localStored) {
+            if (localB?.token && !merged.some((m) => m.token === localB.token)) {
+              merged.push(localB)
+            }
+          }
+          setBookings(merged)
+          saveBookings(merged)
         }
         if (freshCentres && freshCentres.length > 0) {
           setCentres(freshCentres)
@@ -162,6 +183,15 @@ export function BookingProvider({ children }) {
       })
       if (!result.ok) {
         return result
+      }
+
+      // Save token and mobile to persistent storage
+      if (result.booking?.token) {
+        saveLastBookingToken(result.booking.token)
+        addFarmerToken(result.booking.token)
+      }
+      if (result.booking?.mobile) {
+        saveFarmerMobile(result.booking.mobile)
       }
 
       // Step 4: Save farmer profile and booking in Firestore
