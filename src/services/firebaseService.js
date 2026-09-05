@@ -136,6 +136,7 @@ export async function saveBooking(bookingData) {
   const now = new Date().toISOString()
   const payload = {
     token: bookingData.token,
+    ownerUid: String(bookingData.ownerUid || '').trim(),
     name: String(bookingData.name).trim(),
     mobile: normalizeMobile(bookingData.mobile),
     village: String(bookingData.village || '').trim(),

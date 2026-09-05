@@ -3,32 +3,36 @@ import { Link } from 'react-router-dom'
 import { centres } from '../data/centres.js'
 import { useAuth } from '../context/useAuth.js'
 import { useBookings } from '../context/useBookings.js'
+import { normalizeMobile } from '../utils/validation.js'
 
 function FarmerPortal() {
   const { userProfile, currentUser } = useAuth()
 
   const { bookings } = useBookings()
   const [showSupportModal, setShowSupportModal] = useState(false)
+  const userMobile = normalizeMobile(userProfile?.mobile)
+
+  const farmerBookings = useMemo(
+    () => bookings.filter((booking) => (
+      (currentUser?.uid && booking.ownerUid === currentUser.uid) ||
+      (userMobile && normalizeMobile(booking.mobile) === userMobile)
+    )),
+    [bookings, currentUser?.uid, userMobile],
+  )
 
   const farmerName = userProfile?.name || currentUser?.displayName || currentUser?.email?.split('@')[0] || 'Farmer'
 
   // Identify active booking for the current farmer or latest system booking
   const activeBooking = useMemo(() => {
-    if (!bookings || bookings.length === 0) return null
-    // Try to find a scheduled or active booking for current user
-    const userPhone = userProfile?.mobile
-    if (userPhone) {
-      const match = bookings.find((b) => b.mobile === userPhone && !['Completed', 'Cancelled', 'Rejected'].includes(b.status))
-      if (match) return match
-    }
-    return null
-  }, [bookings, userProfile])
+    const match = farmerBookings.find((booking) => !['Completed', 'Cancelled', 'Rejected'].includes(booking.status))
+    return match || null
+  }, [farmerBookings])
 
   // Calculate totals and metrics
   const totalQuintals = useMemo(() => {
-    const sum = bookings.reduce((acc, b) => acc + (Number(b.quantity) || 0), 0)
+    const sum = farmerBookings.reduce((acc, b) => acc + (Number(b.quantity) || 0), 0)
     return sum
-  }, [bookings])
+  }, [farmerBookings])
 
   const recentPaymentAmount = useMemo(() => {
     if (activeBooking?.quantity) {
@@ -53,9 +57,9 @@ function FarmerPortal() {
 
   // Recent procurement history list
   const historyList = useMemo(() => {
-    if (!bookings || bookings.length === 0) return []
+    if (!farmerBookings || farmerBookings.length === 0) return []
 
-    const dynamicRows = bookings.slice(0, 3).map((b) => ({
+    const dynamicRows = farmerBookings.slice(0, 3).map((b) => ({
       id: b.token,
       date: b.date || 'Unknown date',
       crop: b.crop || 'Unknown crop',
@@ -64,7 +68,7 @@ function FarmerPortal() {
     }))
 
     return dynamicRows
-  }, [bookings])
+  }, [farmerBookings])
 
   return (
     <div className="farmer-dashboard-view">

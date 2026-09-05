@@ -209,7 +209,7 @@ function FarmerBookingForm({ title = 'Book Slot', eyebrow = 'Direct Slot Reserva
 
     try {
       setSubmitting(true)
-      const result = await submitBooking(form)
+      const result = await submitBooking({ ...form, ownerUid: currentUser?.uid || '' })
       if (!result || !result.ok) {
         setErrors(result?.errors || {})
         window.scrollTo({ top: 120, behavior: 'smooth' })

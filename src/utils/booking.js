@@ -87,6 +87,7 @@ export function buildBookingRecord(form, bookings = [], createdAt = new Date().t
   const token = form.token || nextToken(bookings, 2026)
   return {
     token,
+    ownerUid: String(form.ownerUid || '').trim(),
     name: String(form.name ?? '').trim(),
     mobile: normalizeMobile(form.mobile),
     village: String(form.village ?? '').trim(),
