@@ -1,6 +1,18 @@
 export const CROPS = ['Paddy', 'Wheat', 'Soybean', 'Cotton', 'Maize']
 
-export const SLOT_DATES = ['2026-08-30', '2026-08-31', '2026-09-01']
+// Generate 21 consecutive operational slot dates from 2026-08-30 to 2026-09-20
+function generateSlotDatesList() {
+  const dates = []
+  const start = new Date('2026-08-30T00:00:00')
+  for (let i = 0; i < 21; i++) {
+    const d = new Date(start)
+    d.setDate(start.getDate() + i)
+    dates.push(d.toISOString().split('T')[0])
+  }
+  return dates
+}
+
+export const SLOT_DATES = generateSlotDatesList()
 
 export const MINUTES_PER_QUEUE_PLACE = 8
 
@@ -81,7 +93,7 @@ const occupancy = {
   },
 }
 
-const capacityByWindow = {
+export const capacityByWindow = {
   '09-11': 10,
   '11-13': 8,
   '14-16': 8,
@@ -96,8 +108,8 @@ export const slots = centres.flatMap((centre) =>
       date,
       windowKey: window.key,
       label: window.label,
-      capacity: capacityByWindow[window.key],
-      reserved: occupancy[centre.id]?.[window.key] ?? 0,
+      capacity: capacityByWindow[window.key] || 8,
+      reserved: date === '2026-08-30' ? (occupancy[centre.id]?.[window.key] ?? 0) : 0,
     })),
   ),
 )

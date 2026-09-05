@@ -1,3 +1,5 @@
+import { capacityByWindow, windows } from '../data/centres.js'
+
 export const SLOT_STATUS = {
   available: 'available',
   nearlyFull: 'nearly-full',
@@ -33,8 +35,22 @@ export function isSlotFull(slot, bookings = []) {
 }
 
 export function slotsForCentreDate(allSlots, centreId, date) {
-  if (!allSlots) return []
-  return allSlots.filter((slot) => slot.centreId === centreId && slot.date === date)
+  if (!centreId || !date) return []
+  const filtered = (allSlots || []).filter((slot) => slot.centreId === centreId && slot.date === date)
+  if (filtered.length > 0) {
+    return filtered
+  }
+
+  // Dynamic fallback for any future or unlisted date
+  return windows.map((window) => ({
+    id: `${centreId}_${date}_${window.key}`,
+    centreId,
+    date,
+    windowKey: window.key,
+    label: window.label,
+    capacity: capacityByWindow[window.key] || 8,
+    reserved: 0,
+  }))
 }
 
 export function availableSeatCount(allSlots, bookings = [], centreId, date) {
@@ -48,8 +64,28 @@ export function totalCapacityForCentreDate(allSlots, centreId, date) {
 }
 
 export function findSlot(allSlots, slotId) {
-  if (!allSlots || !slotId) return null
-  return allSlots.find((slot) => slot.id === slotId) ?? null
+  if (!slotId) return null
+  const found = (allSlots || []).find((slot) => slot.id === slotId)
+  if (found) return found
+
+  // Parse slotId e.g. "wardha-pacs_2026-09-05_09-11"
+  const parts = String(slotId).split('_')
+  if (parts.length >= 3) {
+    const centreId = parts[0]
+    const date = parts[1]
+    const winKey = parts[2]
+    const win = windows.find((w) => w.key === winKey)
+    return {
+      id: slotId,
+      centreId,
+      date,
+      windowKey: winKey,
+      label: win ? win.label : winKey,
+      capacity: capacityByWindow[winKey] || 8,
+      reserved: 0,
+    }
+  }
+  return null
 }
 
 export function findCentre(allCentres, centreId) {
@@ -66,3 +102,4 @@ export function statusLabel(status) {
   }
   return 'Available'
 }
+
