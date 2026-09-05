@@ -57,74 +57,77 @@ function AppLayout() {
         </div>
 
         <nav className="agri-nav-menu" aria-label="Main Navigation">
-          <div className="agri-nav-group">
-            <NavLink
-              to="/"
-              end
-              className={({ isActive }) => (isActive ? 'agri-nav-item active' : 'agri-nav-item')}
-            >
-              <span className="agri-nav-icon" aria-hidden="true">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect width="7" height="7" x="3" y="3" rx="1" />
-                  <rect width="7" height="7" x="14" y="3" rx="1" />
-                  <rect width="7" height="7" x="14" y="14" rx="1" />
-                  <rect width="7" height="7" x="3" y="14" rx="1" />
-                </svg>
-              </span>
-              <span className="agri-nav-label">Dashboard</span>
-            </NavLink>
+          {userRole === 'farmer' && (
+            <div className="agri-nav-group">
+              <NavLink
+                to="/"
+                end
+                className={({ isActive }) => (isActive ? 'agri-nav-item active' : 'agri-nav-item')}
+              >
+                <span className="agri-nav-icon" aria-hidden="true">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect width="7" height="7" x="3" y="3" rx="1" />
+                    <rect width="7" height="7" x="14" y="3" rx="1" />
+                    <rect width="7" height="7" x="14" y="14" rx="1" />
+                    <rect width="7" height="7" x="3" y="14" rx="1" />
+                  </svg>
+                </span>
+                <span className="agri-nav-label">Dashboard</span>
+              </NavLink>
 
-            <NavLink
-              to="/book"
-              className={({ isActive }) => (isActive ? 'agri-nav-item active' : 'agri-nav-item')}
-            >
-              <span className="agri-nav-icon" aria-hidden="true">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M8 2v4" />
-                  <path d="M16 2v4" />
-                  <rect width="18" height="18" x="3" y="4" rx="2" />
-                  <path d="M3 10h18" />
-                  <path d="m9 16 2 2 4-4" />
-                </svg>
-              </span>
-              <span className="agri-nav-label">Book Slot</span>
-            </NavLink>
+              <NavLink
+                to="/book"
+                className={({ isActive }) => (isActive ? 'agri-nav-item active' : 'agri-nav-item')}
+              >
+                <span className="agri-nav-icon" aria-hidden="true">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M8 2v4" />
+                    <path d="M16 2v4" />
+                    <rect width="18" height="18" x="3" y="4" rx="2" />
+                    <path d="M3 10h18" />
+                    <path d="m9 16 2 2 4-4" />
+                  </svg>
+                </span>
+                <span className="agri-nav-label">Book Slot</span>
+              </NavLink>
 
-            <NavLink
-              to="/queue"
-              className={({ isActive }) => (isActive ? 'agri-nav-item active' : 'agri-nav-item')}
-            >
-              <span className="agri-nav-icon" aria-hidden="true">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M5 22h14" />
-                  <path d="M5 2h14" />
-                  <path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22" />
-                  <path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2" />
-                </svg>
-              </span>
-              <span className="agri-nav-label">Live Queue</span>
-            </NavLink>
+              <NavLink
+                to="/queue"
+                className={({ isActive }) => (isActive ? 'agri-nav-item active' : 'agri-nav-item')}
+              >
+                <span className="agri-nav-icon" aria-hidden="true">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M5 22h14" />
+                    <path d="M5 2h14" />
+                    <path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22" />
+                    <path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2" />
+                  </svg>
+                </span>
+                <span className="agri-nav-label">Live Queue</span>
+              </NavLink>
 
-            <NavLink
-              to={latestToken ? `/booking/${latestToken}` : '/book'}
-              className={({ isActive }) => (isActive ? 'agri-nav-item active' : 'agri-nav-item')}
-            >
-              <span className="agri-nav-icon" aria-hidden="true">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect width="20" height="14" x="2" y="5" rx="2" />
-                  <line x1="2" x2="22" y1="10" y2="10" />
-                  <path d="M6 15h2" />
-                  <path d="M12 15h6" />
-                </svg>
-              </span>
-              <span className="agri-nav-label">Payments</span>
-            </NavLink>
-          </div>
+              <NavLink
+                to={latestToken ? `/booking/${latestToken}` : '/book'}
+                className={({ isActive }) => (isActive ? 'agri-nav-item active' : 'agri-nav-item')}
+              >
+                <span className="agri-nav-icon" aria-hidden="true">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect width="20" height="14" x="2" y="5" rx="2" />
+                    <line x1="2" x2="22" y1="10" y2="10" />
+                    <path d="M6 15h2" />
+                    <path d="M12 15h6" />
+                  </svg>
+                </span>
+                <span className="agri-nav-label">Payments</span>
+              </NavLink>
+            </div>
+          )}
 
-          {/* Mandi Operations / Admin Console Links */}
+          {/* Operations Console Links */}
           {(isStaff || isAdmin) && (
             <div className="agri-nav-group" style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid #e2e8f0' }}>
               <div className="agri-nav-heading">OPERATIONS</div>
+
               <NavLink
                 to="/staff"
                 className={({ isActive }) => (isActive ? 'agri-nav-item active' : 'agri-nav-item')}
@@ -143,7 +146,7 @@ function AppLayout() {
                   <span className="agri-nav-icon" aria-hidden="true">
                     <span className="material-symbols-outlined text-sm">admin_panel_settings</span>
                   </span>
-                  <span className="agri-nav-label">Admin Stats</span>
+                  <span className="agri-nav-label">Admin Console</span>
                 </NavLink>
               )}
             </div>
@@ -292,27 +295,31 @@ function AppLayout() {
 
                   {/* Menu Actions */}
                   <div className="profile-dropdown-actions">
-                    <NavLink
-                      to="/book"
-                      className="profile-menu-item"
-                      onClick={() => setShowProfileMenu(false)}
-                    >
-                      <span className="material-symbols-outlined profile-menu-icon" style={{ color: '#003527' }}>
-                        calendar_month
-                      </span>
-                      <span className="profile-menu-text">Book Mandi Slot</span>
-                    </NavLink>
+                    {userRole === 'farmer' && (
+                      <NavLink
+                        to="/book"
+                        className="profile-menu-item"
+                        onClick={() => setShowProfileMenu(false)}
+                      >
+                        <span className="material-symbols-outlined profile-menu-icon" style={{ color: '#003527' }}>
+                          calendar_month
+                        </span>
+                        <span className="profile-menu-text">Book Mandi Slot</span>
+                      </NavLink>
+                    )}
 
-                    <NavLink
-                      to="/queue"
-                      className="profile-menu-item"
-                      onClick={() => setShowProfileMenu(false)}
-                    >
-                      <span className="material-symbols-outlined profile-menu-icon" style={{ color: '#4059aa' }}>
-                        hourglass_empty
-                      </span>
-                      <span className="profile-menu-text">Live Queue Board</span>
-                    </NavLink>
+                    {userRole === 'farmer' && (
+                      <NavLink
+                        to="/queue"
+                        className="profile-menu-item"
+                        onClick={() => setShowProfileMenu(false)}
+                      >
+                        <span className="material-symbols-outlined profile-menu-icon" style={{ color: '#4059aa' }}>
+                          hourglass_empty
+                        </span>
+                        <span className="profile-menu-text">Live Queue Board</span>
+                      </NavLink>
+                    )}
 
                     {isStaff && (
                       <NavLink
@@ -336,7 +343,7 @@ function AppLayout() {
                         <span className="material-symbols-outlined profile-menu-icon" style={{ color: '#854d0e' }}>
                           query_stats
                         </span>
-                        <span className="profile-menu-text">Admin Dashboard</span>
+                        <span className="profile-menu-text">Admin Console</span>
                       </NavLink>
                     )}
 

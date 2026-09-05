@@ -30,17 +30,15 @@ export function AuthProvider({ children }) {
         if (firebaseUser) {
           setCurrentUser(firebaseUser)
           const profile = await getUserProfile(firebaseUser.uid)
+
           if (profile) {
             setUserProfile(profile)
           } else {
-            // Default fallback if doc is still initializing
-            const email = firebaseUser.email || ''
-            const role = email.includes('admin') ? 'admin' : email.includes('staff') ? 'staff' : 'farmer'
             setUserProfile({
               uid: firebaseUser.uid,
-              name: firebaseUser.displayName || email.split('@')[0] || 'User',
-              email,
-              role,
+              name: firebaseUser.displayName || (firebaseUser.email || '').split('@')[0] || 'User',
+              email: firebaseUser.email || '',
+              role: 'unassigned',
               mobile: '',
             })
           }
@@ -115,7 +113,7 @@ export function AuthProvider({ children }) {
     })
   }, [currentUser, isFb])
 
-  const userRole = userProfile?.role || 'farmer'
+  const userRole = userProfile?.role || 'unassigned'
   const isFarmer = userRole === 'farmer'
   const isStaff = userRole === 'staff'
   const isAdmin = userRole === 'admin'

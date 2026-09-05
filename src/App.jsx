@@ -1,6 +1,7 @@
-import { Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes } from 'react-router-dom'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
 import RoleRoute from './components/RoleRoute.jsx'
+import { useAuth } from './context/useAuth.js'
 import AppLayout from './layouts/AppLayout.jsx'
 import AdminDashboard from './pages/AdminDashboard.jsx'
 import BookSlot from './pages/BookSlot.jsx'
@@ -14,6 +15,16 @@ import ProcurementCentres from './pages/ProcurementCentres.jsx'
 import QueueStatus from './pages/QueueStatus.jsx'
 import StaffDashboard from './pages/StaffDashboard.jsx'
 import Unauthorized from './pages/Unauthorized.jsx'
+
+function RootLanding() {
+  const { userRole } = useAuth()
+
+  if (userRole === 'admin') return <Navigate to="/admin" replace />
+  if (userRole === 'staff') return <Navigate to="/staff" replace />
+  if (userRole === 'farmer') return <FarmerPortal />
+
+  return <Navigate to="/login" replace />
+}
 
 function App() {
   return (
@@ -29,9 +40,9 @@ function App() {
 
         {/* Protected Application Routes */}
         <Route element={<ProtectedRoute />}>
-          {/* Farmer Portal & General Operations (Accessible to Farmer, Staff, Admin) */}
-          <Route element={<RoleRoute allowedRoles={['farmer', 'staff', 'admin']} />}>
-            <Route path="/" element={<FarmerPortal />} />
+          {/* Farmer-facing portal and booking actions */}
+          <Route path="/" element={<RootLanding />} />
+          <Route element={<RoleRoute allowedRoles={['farmer']} />}>
             <Route path="/centres" element={<ProcurementCentres />} />
             <Route path="/register" element={<FarmerRegistration />} />
             <Route path="/book" element={<BookSlot />} />
@@ -40,12 +51,12 @@ function App() {
             <Route path="/booking/:bookingId" element={<BookingDetails />} />
           </Route>
 
-          {/* Mandi Staff Operations Console (Staff and Admin) */}
+          {/* Staff operations console */}
           <Route element={<RoleRoute allowedRoles={['staff', 'admin']} />}>
             <Route path="/staff" element={<StaffDashboard />} />
           </Route>
 
-          {/* District Admin Executive Dashboard (Admin Only) */}
+          {/* District Admin Executive Dashboard */}
           <Route element={<RoleRoute allowedRoles={['admin']} />}>
             <Route path="/admin" element={<AdminDashboard />} />
           </Route>

@@ -151,8 +151,60 @@ export async function signUpFarmer({ email, password, name, mobile, village = ''
 }
 
 /**
- * 4. Sign In user with Email & Password
- * Retrieves role and profile from Firestore `users/{uid}`.
+ * 4. Create a staff/admin account from within the admin console.
+ * These accounts are not public self-registrations.
+ */
+export async function createStaffAccount({
+  email,
+  password,
+  name,
+  mobile,
+  village = '',
+  assignedCentreId = '',
+  role = 'staff',
+}) {
+  if (!auth || !isFirebaseConfigured()) {
+    throw new Error('Firebase Authentication is not configured.')
+  }
+
+  const cleanEmail = String(email).trim().toLowerCase()
+  const cleanName = String(name).trim()
+  const cleanMobile = normalizeMobile(mobile)
+
+  if (!cleanName) throw new Error('Full name is required.')
+  if (!cleanEmail) throw new Error('Email address is required.')
+  if (!password || password.length < 6) throw new Error('Password must be at least 6 characters.')
+  if (!['staff', 'admin'].includes(role)) {
+    throw new Error('Only staff and admin roles can be created from the admin panel.')
+  }
+
+  const userCredential = await createUserWithEmailAndPassword(auth, cleanEmail, password)
+  const user = userCredential.user
+
+  try {
+    await updateProfile(user, { displayName: cleanName })
+  } catch (e) {
+    console.warn('Could not update displayName for staff account:', e)
+  }
+
+  const profile = {
+    uid: user.uid,
+    name: cleanName,
+    email: cleanEmail,
+    role,
+    mobile: cleanMobile,
+    village: String(village).trim(),
+    assignedCentreId: String(assignedCentreId || '').trim(),
+    createdAt: new Date().toISOString(),
+  }
+
+  await setUserProfile(user.uid, profile)
+  return { user, profile }
+}
+
+/**
+ * 5. Sign In user with Email & Password.
+ * Only accounts with a stored Firestore role are allowed to log in.
  */
 export async function loginUser(email, password) {
   if (!auth || !isFirebaseConfigured()) {
@@ -163,28 +215,13 @@ export async function loginUser(email, password) {
   if (!cleanEmail) throw new Error('Email address is required.')
   if (!password) throw new Error('Password is required.')
 
-  // 1. Sign in with Firebase Auth
   const userCredential = await signInWithEmailAndPassword(auth, cleanEmail, password)
   const user = userCredential.user
 
-  // 2. Fetch role and user document from Firestore `users/{uid}`
-  let profile = await getUserProfile(user.uid)
+  const profile = await getUserProfile(user.uid)
 
-  // 3. If doc does not exist yet (e.g. newly created via Firebase Console), create default profile
   if (!profile) {
-    const isDefaultAdmin = cleanEmail.includes('admin')
-    const isDefaultStaff = cleanEmail.includes('staff')
-    const defaultRole = isDefaultAdmin ? 'admin' : isDefaultStaff ? 'staff' : 'farmer'
-
-    profile = {
-      uid: user.uid,
-      name: user.displayName || cleanEmail.split('@')[0],
-      email: cleanEmail,
-      role: defaultRole,
-      mobile: '',
-      createdAt: new Date().toISOString(),
-    }
-    await setUserProfile(user.uid, profile)
+    throw new Error('This account is not assigned a role yet. Please contact the admin to create your access.')
   }
 
   return { user, profile }

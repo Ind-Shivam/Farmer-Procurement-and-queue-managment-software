@@ -14,6 +14,7 @@ function Login() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [loginRole, setLoginRole] = useState('farmer')
   const [googleSubmitting, setGoogleSubmitting] = useState(false)
 
   // Redirect if already logged in
@@ -50,7 +51,7 @@ function Login() {
     try {
       setSubmitting(true)
       const { profile } = await login(email, password)
-      const targetPath = getRedirectPath(profile?.role || 'farmer')
+      const targetPath = getRedirectPath(profile?.role || loginRole)
       navigate(targetPath, { replace: true })
     } catch (err) {
       console.error('Login error:', err)
@@ -59,6 +60,13 @@ function Login() {
       setSubmitting(false)
     }
   }
+
+  const loginRoleOptions = [
+    { id: 'farmer', label: 'Farmer Login' },
+    { id: 'staff', label: 'Staff Login' },
+  ]
+
+  const isStaffLogin = loginRole === 'staff'
 
   async function handleGoogleSignIn() {
     setError('')
@@ -96,10 +104,31 @@ function Login() {
               <span className="material-symbols-outlined" style={{ color: '#003527' }}>lock</span>
             </div>
             <span className="auth-eyebrow-tag">SECURE ACCESS PORTAL</span>
-            <h1 className="auth-heading">Sign In to KisanSetu</h1>
+            <h1 className="auth-heading">{isStaffLogin ? 'Staff Access Portal' : 'Sign In to KisanSetu'}</h1>
             <p className="auth-subtitle">
-              Access your farmer bookings, mandi queue desk, or administrative dashboard.
+              {isStaffLogin
+                ? 'Access the mandi operations desk and queue management console.'
+                : 'Access your farmer bookings, procurement status, and mandi updates.'}
             </p>
+          </div>
+
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '18px', flexWrap: 'wrap' }}>
+            {loginRoleOptions.map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => setLoginRole(option.id)}
+                className={`btn ${loginRole === option.id ? 'btn-primary' : 'btn-secondary'} btn-sm`}
+                style={{
+                  flex: '1 1 160px',
+                  justifyContent: 'center',
+                  borderRadius: '10px',
+                  fontWeight: '700',
+                }}
+              >
+                {option.label}
+              </button>
+            ))}
           </div>
 
           {error && (
@@ -136,7 +165,7 @@ function Login() {
               <input
                 id="auth-email"
                 type="email"
-                placeholder="e.g. farmer@kisansetu.in"
+                placeholder={isStaffLogin ? 'e.g. staff@kisansetu.in' : 'e.g. farmer@kisansetu.in'}
                 autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -184,30 +213,42 @@ function Login() {
             </button>
           </form>
 
-          <div className="auth-divider" aria-hidden="true">
-            <span>OR</span>
-          </div>
+          {!isStaffLogin && (
+            <>
+              <div className="auth-divider" aria-hidden="true">
+                <span>OR</span>
+              </div>
 
-          <button
-            type="button"
-            className="btn-auth-google"
-            onClick={handleGoogleSignIn}
-            disabled={submitting || googleSubmitting}
-          >
-            <img
-              className="auth-google-mark"
-              src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-              alt=""
-              aria-hidden="true"
-            />
-            <span>{googleSubmitting ? 'Connecting to Google...' : 'Continue with Google'}</span>
-          </button>
+              <button
+                type="button"
+                className="btn-auth-google"
+                onClick={handleGoogleSignIn}
+                disabled={submitting || googleSubmitting}
+              >
+                <img
+                  className="auth-google-mark"
+                  src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                  alt=""
+                  aria-hidden="true"
+                />
+                <span>{googleSubmitting ? 'Connecting to Google...' : 'Continue with Google'}</span>
+              </button>
+            </>
+          )}
 
           <div className="auth-footer-switch">
-            <span>New farmer to KisanSetu?</span>
-            <Link to="/signup" className="auth-switch-link">
-              Register Farmer Account &rarr;
-            </Link>
+            {isStaffLogin ? (
+              <>
+                <span>Staff accounts are assigned by admin only.</span>
+              </>
+            ) : (
+              <>
+                <span>New farmer to KisanSetu?</span>
+                <Link to="/signup" className="auth-switch-link">
+                  Register Farmer Account &rarr;
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </main>

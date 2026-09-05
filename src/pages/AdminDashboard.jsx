@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CROPS } from '../data/centres.js'
 import { useBookings } from '../context/useBookings.js'
+import { createStaffAccount } from '../services/authService.js'
 
 function AdminDashboard() {
   const { bookings, centres, addCentre, removeCentre, updateStatus, refreshData, refreshing } = useBookings()
@@ -14,6 +15,7 @@ function AdminDashboard() {
 
   // New Centre Form State
   const [showAddCentre, setShowAddCentre] = useState(false)
+  const [showCreateStaff, setShowCreateStaff] = useState(false)
   const [newCentre, setNewCentre] = useState({
     name: '',
     location: '',
@@ -21,7 +23,51 @@ function AdminDashboard() {
     capacityPerDay: 32,
     acceptedCrops: ['Paddy', 'Soybean', 'Cotton'],
   })
+  const [newStaff, setNewStaff] = useState({
+    name: '',
+    email: '',
+    password: '',
+    mobile: '',
+    village: '',
+    assignedCentreId: '',
+    role: 'staff',
+  })
   const [centreNotice, setCentreNotice] = useState(null)
+
+  async function handleCreateStaff(e) {
+    e.preventDefault()
+    if (!newStaff.name.trim() || !newStaff.email.trim() || !newStaff.password.trim()) {
+      alert('Please fill in staff name, email, and password.')
+      return
+    }
+
+    try {
+      await createStaffAccount({
+        name: newStaff.name,
+        email: newStaff.email,
+        password: newStaff.password,
+        mobile: newStaff.mobile,
+        village: newStaff.village,
+        assignedCentreId: newStaff.assignedCentreId,
+        role: newStaff.role,
+      })
+
+      setCentreNotice(`✅ Created ${newStaff.role} account for ${newStaff.name}. They can now sign in.`)
+      setShowCreateStaff(false)
+      setNewStaff({
+        name: '',
+        email: '',
+        password: '',
+        mobile: '',
+        village: '',
+        assignedCentreId: '',
+        role: 'staff',
+      })
+      setTimeout(() => setCentreNotice(null), 5000)
+    } catch (error) {
+      alert(error?.message || 'Unable to create staff account.')
+    }
+  }
 
   async function handleCreateCentre(e) {
     e.preventDefault()
@@ -168,6 +214,15 @@ function AdminDashboard() {
           </button>
           <button
             type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={() => setShowCreateStaff(!showCreateStaff)}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+          >
+            <span className="material-symbols-outlined text-sm">person_add</span>
+            <span>{showCreateStaff ? 'Close Staff Form' : 'Create Staff Access'}</span>
+          </button>
+          <button
+            type="button"
             className="btn-admin-export"
             onClick={handleExportData}
             title="Download CSV export of current filtered records"
@@ -192,6 +247,96 @@ function AdminDashboard() {
         <div className="alert-banner alert-warning" style={{ margin: '16px 0', animation: 'fadeIn 0.2s ease-in-out' }}>
           <span className="material-symbols-outlined text-sm">check_circle</span>
           <span>{centreNotice}</span>
+        </div>
+      )}
+
+      {/* Staff Account Creation Panel */}
+      {showCreateStaff && (
+        <div className="panel" style={{ background: '#ffffff', border: '2px solid #003527', borderRadius: '12px', padding: '24px', marginBottom: '24px' }}>
+          <h3 style={{ margin: '0 0 16px', color: '#003527', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span className="material-symbols-outlined">person_add</span>
+            <span>Create Staff / Admin Account</span>
+          </h3>
+          <form onSubmit={handleCreateStaff} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+            <div>
+              <label style={{ fontSize: '13px', fontWeight: '600', display: 'block', marginBottom: '4px' }}>Full Name *</label>
+              <input
+                type="text"
+                placeholder="e.g. Priya Meshram"
+                value={newStaff.name}
+                onChange={(e) => setNewStaff({ ...newStaff, name: e.target.value })}
+                required
+                style={{ width: '100%', padding: '8px 12px', border: '1px solid #bfc9c3', borderRadius: '6px' }}
+              />
+            </div>
+            <div>
+              <label style={{ fontSize: '13px', fontWeight: '600', display: 'block', marginBottom: '4px' }}>Email *</label>
+              <input
+                type="email"
+                placeholder="staff@kisansetu.in"
+                value={newStaff.email}
+                onChange={(e) => setNewStaff({ ...newStaff, email: e.target.value })}
+                required
+                style={{ width: '100%', padding: '8px 12px', border: '1px solid #bfc9c3', borderRadius: '6px' }}
+              />
+            </div>
+            <div>
+              <label style={{ fontSize: '13px', fontWeight: '600', display: 'block', marginBottom: '4px' }}>Password *</label>
+              <input
+                type="password"
+                placeholder="Minimum 6 characters"
+                value={newStaff.password}
+                onChange={(e) => setNewStaff({ ...newStaff, password: e.target.value })}
+                required
+                style={{ width: '100%', padding: '8px 12px', border: '1px solid #bfc9c3', borderRadius: '6px' }}
+              />
+            </div>
+            <div>
+              <label style={{ fontSize: '13px', fontWeight: '600', display: 'block', marginBottom: '4px' }}>Mobile</label>
+              <input
+                type="text"
+                placeholder="9876543210"
+                value={newStaff.mobile}
+                onChange={(e) => setNewStaff({ ...newStaff, mobile: e.target.value })}
+                style={{ width: '100%', padding: '8px 12px', border: '1px solid #bfc9c3', borderRadius: '6px' }}
+              />
+            </div>
+            <div>
+              <label style={{ fontSize: '13px', fontWeight: '600', display: 'block', marginBottom: '4px' }}>Village / Office</label>
+              <input
+                type="text"
+                placeholder="Wardha / Mandi Office"
+                value={newStaff.village}
+                onChange={(e) => setNewStaff({ ...newStaff, village: e.target.value })}
+                style={{ width: '100%', padding: '8px 12px', border: '1px solid #bfc9c3', borderRadius: '6px' }}
+              />
+            </div>
+            <div>
+              <label style={{ fontSize: '13px', fontWeight: '600', display: 'block', marginBottom: '4px' }}>Assigned Centre ID</label>
+              <input
+                type="text"
+                placeholder="wardha-pacs"
+                value={newStaff.assignedCentreId}
+                onChange={(e) => setNewStaff({ ...newStaff, assignedCentreId: e.target.value })}
+                style={{ width: '100%', padding: '8px 12px', border: '1px solid #bfc9c3', borderRadius: '6px' }}
+              />
+            </div>
+            <div>
+              <label style={{ fontSize: '13px', fontWeight: '600', display: 'block', marginBottom: '4px' }}>Role</label>
+              <select
+                value={newStaff.role}
+                onChange={(e) => setNewStaff({ ...newStaff, role: e.target.value })}
+                style={{ width: '100%', padding: '8px 12px', border: '1px solid #bfc9c3', borderRadius: '6px' }}
+              >
+                <option value="staff">Staff</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+            <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '8px' }}>
+              <button type="button" className="btn btn-secondary btn-sm" onClick={() => setShowCreateStaff(false)}>Cancel</button>
+              <button type="submit" className="btn btn-primary btn-sm">Create Access Account</button>
+            </div>
+          </form>
         </div>
       )}
 
