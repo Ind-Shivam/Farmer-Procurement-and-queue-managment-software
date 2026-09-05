@@ -71,6 +71,61 @@ function BookingDetails() {
     }
   }
 
+  function handlePrintSlip() {
+    const slip = document.querySelector('.printable-area')
+    if (!slip) return
+
+    const printWindow = window.open('', '_blank', 'width=900,height=1200')
+    if (!printWindow) {
+      window.print()
+      return
+    }
+
+    const stylesheetLinks = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+      .map((link) => `<link rel="stylesheet" href="${link.href}">`)
+      .join('')
+
+    printWindow.document.write(`
+      <!doctype html>
+      <html>
+        <head>
+          <title>KisanSetu Token ${booking?.token || ''}</title>
+          ${stylesheetLinks}
+          <style>
+            @page { size: A4 portrait; margin: 10mm; }
+            html, body { margin: 0; padding: 0; background: #fff; }
+            body { width: 190mm; }
+            .printable-area {
+              visibility: visible !important;
+              position: static !important;
+              width: 190mm !important;
+              min-height: 0 !important;
+              margin: 0 !important;
+              padding: 10mm !important;
+              box-sizing: border-box !important;
+              border: 2px solid #000 !important;
+              border-radius: 0 !important;
+              box-shadow: none !important;
+              gap: 10px !important;
+              overflow: hidden !important;
+            }
+            .printable-area * { visibility: visible !important; }
+            .no-print { display: none !important; }
+          </style>
+        </head>
+        <body>${slip.outerHTML}</body>
+      </html>
+    `)
+    printWindow.document.close()
+    printWindow.focus()
+    printWindow.onload = () => {
+      window.setTimeout(() => {
+        printWindow.print()
+        printWindow.close()
+      }, 250)
+    }
+  }
+
   function handleSearch(e) {
     e.preventDefault()
     if (!searchQuery.trim()) return
@@ -155,7 +210,7 @@ function BookingDetails() {
           <h1>Token Receipt &amp; Pass</h1>
         </div>
         <div className="header-actions">
-          <button className="btn btn-sm" onClick={() => window.print()} title="Print this receipt">
+          <button className="btn btn-sm" onClick={handlePrintSlip} title="Print this receipt">
             🖨️ Print Slip
           </button>
         </div>
