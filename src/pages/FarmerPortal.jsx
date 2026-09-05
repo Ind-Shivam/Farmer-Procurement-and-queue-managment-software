@@ -10,14 +10,15 @@ function FarmerPortal() {
 
   const { bookings } = useBookings()
   const [showSupportModal, setShowSupportModal] = useState(false)
+  const currentUserUid = currentUser?.uid || ''
   const userMobile = normalizeMobile(userProfile?.mobile)
 
   const farmerBookings = useMemo(
     () => bookings.filter((booking) => (
-      (currentUser?.uid && booking.ownerUid === currentUser.uid) ||
+      (currentUserUid && booking.ownerUid === currentUserUid) ||
       (userMobile && normalizeMobile(booking.mobile) === userMobile)
     )),
-    [bookings, currentUser?.uid, userMobile],
+    [bookings, currentUserUid, userMobile],
   )
 
   const farmerName = userProfile?.name || currentUser?.displayName || currentUser?.email?.split('@')[0] || 'Farmer'
