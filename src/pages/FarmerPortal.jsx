@@ -26,7 +26,7 @@ function FarmerPortal() {
   // Identify active booking for the current farmer or latest system booking
   const activeBooking = useMemo(() => {
     const match = farmerBookings.find((booking) => !['Completed', 'Cancelled', 'Rejected'].includes(booking.status))
-    return match || null
+    return match || farmerBookings[0] || null
   }, [farmerBookings])
 
   // Calculate totals and metrics
@@ -151,7 +151,7 @@ function FarmerPortal() {
             <h3 className="card-header-title">Active Booking</h3>
             <span className="status-badge-scheduled">
               <span className="material-symbols-outlined status-badge-icon" aria-hidden="true">schedule</span>
-              Scheduled
+              {activeBooking?.status || 'No booking'}
             </span>
           </div>
 
