@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { centres as localCentres, seedBookings as localSeedBookings, slots as localSlots } from '../data/centres.js'
+import { centres as localCentres, slots as localSlots } from '../data/centres.js'
 import { isFirebaseConfigured } from '../firebase/config.js'
 import {
   checkSlotAvailability,
@@ -29,7 +29,7 @@ export function BookingProvider({ children }) {
   const [isFirebaseActive, setIsFirebaseActive] = useState(isFb)
   const [centres, setCentres] = useState(localCentres)
   const [slots, setSlots] = useState(localSlots)
-  const [bookings, setBookings] = useState(() => loadBookings(localSeedBookings))
+  const [bookings, setBookings] = useState(() => (isFb ? [] : loadBookings([])))
   const [notifications, setNotifications] = useState([])
   const [loading, setLoading] = useState(isFb)
   const [refreshing, setRefreshing] = useState(false)
@@ -59,10 +59,9 @@ export function BookingProvider({ children }) {
 
         // 3. Real-time Firestore subscriptions
         unsubBookings = subscribeToBookings((fbBookings) => {
-          if (fbBookings && fbBookings.length > 0) {
-            setBookings(fbBookings)
-            saveBookings(fbBookings)
-          }
+          const nextBookings = Array.isArray(fbBookings) ? fbBookings : []
+          setBookings(nextBookings)
+          saveBookings(nextBookings)
         })
 
         unsubCentres = subscribeToCentres((fbCentres) => {
@@ -220,10 +219,10 @@ export function BookingProvider({ children }) {
 
     function resetToSeedData() {
       clearStoredBookings()
-      setBookings(localSeedBookings)
+      setBookings([])
       setCentres(localCentres)
       setSlots(localSlots)
-      saveBookings(localSeedBookings)
+      saveBookings([])
     }
 
     async function lookupBooking(query) {

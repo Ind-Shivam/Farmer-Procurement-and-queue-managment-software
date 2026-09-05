@@ -13,7 +13,7 @@ function AppLayout() {
   const [showSupportModal, setShowSupportModal] = useState(false)
   const [showNotifMenu, setShowNotifMenu] = useState(false)
 
-  const latestToken = bookings.length > 0 ? bookings[bookings.length - 1].token : 'KC-2026-0101'
+  const latestToken = bookings.length > 0 ? bookings[bookings.length - 1].token : null
 
   async function handleLogout() {
     setShowProfileMenu(false)
@@ -36,7 +36,7 @@ function AppLayout() {
   }
 
   const activeRoleBadge = roleLabelMap[userRole] || roleLabelMap.farmer
-  const userName = userProfile?.name || currentUser?.displayName || currentUser?.email?.split('@')[0] || 'Ramesh Singh'
+  const userName = userProfile?.name || currentUser?.displayName || currentUser?.email?.split('@')[0] || 'Farmer'
   const userInitial = userName.charAt(0).toUpperCase()
 
   return (
@@ -103,7 +103,7 @@ function AppLayout() {
             </NavLink>
 
             <NavLink
-              to={`/booking/${latestToken}`}
+              to={latestToken ? `/booking/${latestToken}` : '/book'}
               className={({ isActive }) => (isActive ? 'agri-nav-item active' : 'agri-nav-item')}
             >
               <span className="agri-nav-icon" aria-hidden="true">

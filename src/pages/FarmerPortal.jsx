@@ -10,7 +10,7 @@ function FarmerPortal() {
   const { bookings } = useBookings()
   const [showSupportModal, setShowSupportModal] = useState(false)
 
-  const farmerName = userProfile?.name || currentUser?.displayName || currentUser?.email?.split('@')[0] || 'Ramesh Singh'
+  const farmerName = userProfile?.name || currentUser?.displayName || currentUser?.email?.split('@')[0] || 'Farmer'
 
   // Identify active booking for the current farmer or latest system booking
   const activeBooking = useMemo(() => {
@@ -21,56 +21,49 @@ function FarmerPortal() {
       const match = bookings.find((b) => b.mobile === userPhone && !['Completed', 'Cancelled', 'Rejected'].includes(b.status))
       if (match) return match
     }
-    // Fallback to latest scheduled booking
-    return bookings[0] || null
+    return null
   }, [bookings, userProfile])
 
   // Calculate totals and metrics
   const totalQuintals = useMemo(() => {
     const sum = bookings.reduce((acc, b) => acc + (Number(b.quantity) || 0), 0)
-    return sum > 0 ? sum : 120
+    return sum
   }, [bookings])
 
   const recentPaymentAmount = useMemo(() => {
     if (activeBooking?.quantity) {
       return Number(activeBooking.quantity) * 2275 // MSP rate
     }
-    return 45000
+    return 0
   }, [activeBooking])
 
   // Centre name lookup
   const centreName = useMemo(() => {
-    if (!activeBooking) return 'Krishi Mandi - Sector A'
+    if (!activeBooking) return 'No booking yet'
     const found = centres.find((c) => c.id === activeBooking.centreId)
-    return found ? found.name : 'Krishi Mandi - Sector A'
+    return found ? found.name : 'Unknown centre'
   }, [activeBooking])
 
   // Display slot date & time
-  const slotDateDisplay = activeBooking?.date || 'Oct 24, 2023'
-  const slotTimeDisplay = activeBooking?.slotId ? activeBooking.slotId.split('_')[2] : '10:00 AM'
+  const slotDateDisplay = activeBooking?.date || 'No booking yet'
+  const slotTimeDisplay = activeBooking?.slotId ? activeBooking.slotId.split('_')[2] : ''
 
   // Token code
-  const tokenCode = activeBooking?.token || '452'
+  const tokenCode = activeBooking?.token || ''
 
   // Recent procurement history list
   const historyList = useMemo(() => {
-    const staticHistory = [
-      { id: 'h1', date: 'Oct 10, 2023', crop: 'Wheat', quantity: '45.5', status: 'Processed' },
-      { id: 'h2', date: 'Sep 28, 2023', crop: 'Soybean', quantity: '30.0', status: 'Processed' },
-      { id: 'h3', date: 'Sep 15, 2023', crop: 'Wheat', quantity: '44.5', status: 'Processed' },
-    ]
-
-    if (!bookings || bookings.length === 0) return staticHistory
+    if (!bookings || bookings.length === 0) return []
 
     const dynamicRows = bookings.slice(0, 3).map((b) => ({
       id: b.token,
-      date: b.date || 'Oct 24, 2023',
-      crop: b.crop || 'Wheat',
-      quantity: String(b.quantity || 15.0),
+      date: b.date || 'Unknown date',
+      crop: b.crop || 'Unknown crop',
+      quantity: String(b.quantity || 0),
       status: b.status === 'Completed' ? 'Processed' : b.status || 'Processed',
     }))
 
-    return dynamicRows.length >= 3 ? dynamicRows : [...dynamicRows, ...staticHistory.slice(dynamicRows.length)]
+    return dynamicRows
   }, [bookings])
 
   return (

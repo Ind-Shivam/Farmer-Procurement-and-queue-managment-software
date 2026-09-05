@@ -14,7 +14,6 @@ import {
 } from 'firebase/firestore'
 import {
   centres as sampleCentres,
-  seedBookings as sampleBookings,
   slots as sampleSlots,
 } from '../data/centres.js'
 import { db, isFirebaseConfigured } from '../firebase/config.js'
@@ -202,7 +201,7 @@ export async function readAvailableSlots(centreId, date) {
  * 6. Read bookings with optional filters
  */
 export async function readBookings(filters = {}) {
-  if (!db || !isFirebaseConfigured()) return sampleBookings
+  if (!db || !isFirebaseConfigured()) return []
 
   let q = collection(db, COLLECTIONS.BOOKINGS)
   const conditions = []
@@ -411,7 +410,7 @@ export function subscribeToNotifications(callback) {
 }
 
 /**
- * 15. Idempotent one-time seed method for three centres, several slots, and sample bookings
+ * 15. Idempotent one-time seed method for centres and slots
  */
 export async function seedFirestoreDataIfEmpty() {
   if (!db || !isFirebaseConfigured()) return false
@@ -433,7 +432,7 @@ export async function seedFirestoreDataIfEmpty() {
       return false
     }
 
-    console.info('🌱 Seeding initial procurement centres, slots, and sample bookings into Firestore...')
+    console.info('🌱 Seeding initial procurement centres and slots into Firestore...')
 
     // 1. Seed Procurement Centres
     for (const centre of sampleCentres) {
@@ -445,37 +444,13 @@ export async function seedFirestoreDataIfEmpty() {
       await setDoc(doc(db, COLLECTIONS.SLOTS, slot.id), slot)
     }
 
-    // 3. Seed Sample Bookings & Farmers
-    for (const booking of sampleBookings) {
-      await setDoc(doc(db, COLLECTIONS.BOOKINGS, booking.token), {
-        ...booking,
-        status: booking.status || 'Booked',
-        paymentStatus: booking.paymentStatus || 'Pending',
-        updatedAt: booking.createdAt,
-      })
-
-      await saveFarmer({
-        name: booking.name,
-        mobile: booking.mobile,
-        village: booking.village,
-        vehicleNumber: booking.vehicleNumber,
-      })
-
-      await createNotification({
-        recipientMobile: booking.mobile,
-        token: booking.token,
-        message: `Sample Token ${booking.token} issued for ${booking.name} at ${booking.centreId}. Status: ${booking.status}.`,
-        type: 'SAMPLE_SEED',
-      })
-    }
-
     // Record seed completion
     await setDoc(seedMetaRef, {
       seeded: true,
       seededAt: new Date().toISOString(),
       centresCount: sampleCentres.length,
       slotsCount: sampleSlots.length,
-      bookingsCount: sampleBookings.length,
+      bookingsCount: 0,
     })
 
     console.info('✅ Firestore initial seed completed successfully!')
