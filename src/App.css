@@ -1793,9 +1793,23 @@ select option {
 
 /* Print Specific Rules */
 @media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm;
+  }
+
   body {
     background: #fff;
     color: #000;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  .printable-area,
+  .printable-area * {
+    visibility: visible !important;
   }
 
   .site-header,
@@ -1812,9 +1826,52 @@ select option {
   }
 
   .token-slip-card {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 190mm;
+    min-height: 0;
+    margin: 0;
     border: 2px solid #000;
+    border-radius: 0;
     box-shadow: none;
-    padding: 20px;
+    padding: 12mm;
+    gap: 10px;
+    box-sizing: border-box;
+    font-size: 11px;
+  }
+
+  .slip-top-brand {
+    padding-bottom: 10px;
+  }
+
+  .token-hero-box {
+    padding: 12px;
+  }
+
+  .token-code {
+    font-size: 28px;
+  }
+
+  .slip-status-pill-row,
+  .produce-summary-box {
+    gap: 8px;
+  }
+
+  .slip-data-grid {
+    gap: 18px;
+  }
+
+  .slip-data-group h4 {
+    margin-bottom: 8px;
+  }
+
+  .slip-dl {
+    gap: 6px;
+  }
+
+  .slip-guidelines {
+    padding: 10px 14px;
   }
 }
 
